@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <fstream>
+#include <vector>
 
 template <typename T>
 class Matrix {
@@ -95,6 +96,18 @@ public:
                 std::cout << data[i][j] << "\t\t";
             }
             std::cout << std::endl;
+        }
+    }
+
+    void checkEquality(const std::vector<double>& res)
+    {
+        double x_ = 0;
+        for (int i = 0; i < this->getRows(); ++i) {
+            for (int j = 0; j < this->getCols() - 1; ++j) {
+                x_ += this->at(i, j) * res[j];
+            }
+            std::cout << x_ << ' ' << this->at(i, this->getCols() - 1) << std::endl;
+            x_ = 0;
         }
     }
 
