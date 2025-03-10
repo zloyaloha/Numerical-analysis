@@ -6,7 +6,6 @@
 #include <iomanip>
 #include <stdexcept>
 
-
 class LU {
 
 public:
@@ -24,9 +23,9 @@ public:
         int permutatuions = 0;
 
         for (int k = 0; k < A.getRows(); ++k) {
-            double max_elem = 0;
+            double max_elem = abs(A.at(k, k));
             int max_ind = k;
-            for (int i = k; i < A.getRows(); ++i) {
+            for (int i = k + 1; i < A.getRows(); ++i) {
                 if (abs(A.at(i, k)) > max_elem) {
                     max_elem = abs(A.at(i, k));
                     max_ind = i;
