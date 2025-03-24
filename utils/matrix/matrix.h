@@ -63,19 +63,43 @@ public:
         return data[row];
     }
 
-    Matrix<T> multiply(const Matrix<T>& other) const {
+    Matrix<T> operator*(const Matrix<T>& other) const {
         if (cols != other.rows) {
             throw std::invalid_argument("Число столбцов первой матрицы должно быть равно числу строк второй матрицы");
         }
 
-        Matrix<T> result(rows, other.cols);
+        Matrix<T> result(rows, other.cols, 0);
 
         for (size_t i = 0; i < rows; ++i) {
             for (size_t j = 0; j < other.cols; ++j) {
-                result.at(i, j) = 0;
                 for (size_t k = 0; k < cols; ++k) {
                     result.at(i, j) += data[i][k] * other.at(k, j);
                 }
+            }
+        }
+
+        return result;
+    }
+
+    Matrix<T> operator*(const T& alpha) const {
+
+        Matrix<T> result(rows, cols);
+
+        for (size_t i = 0; i < rows; ++i) {
+            for (size_t j = 0; j < cols; ++j) {
+                result.at(i, j) = data[i][j] * alpha;
+            }
+        }
+
+        return result;
+    }
+
+    Matrix<T> operator~() const {
+        Matrix<T> result(cols, rows); // Создаем новую матрицу с обратными размерами
+
+        for (size_t i = 0; i < rows; ++i) {
+            for (size_t j = 0; j < cols; ++j) {
+                result.at(j, i) = data[i][j]; // Копируем элементы с транспонированием
             }
         }
 

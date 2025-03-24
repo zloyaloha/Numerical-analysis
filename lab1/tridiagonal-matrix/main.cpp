@@ -9,7 +9,7 @@ int main() {
         std::cout << x << ' ';
     }
     std::cout << std::endl;
-    
+
     mat.checkEquality(res);
 
     // lu.decompose(mat, 1);

@@ -20,7 +20,7 @@ public:
         for (int i = 1; i < n; ++i) {
             a = A.at(i, i - 1);
             b = A.at(i, i);
-            c = A.at(i, i + 1); 
+            c = A.at(i, i + 1);
             d = A.at(i, A.getCols() - 1);
 
             if (a == 0 || c == 0) {
