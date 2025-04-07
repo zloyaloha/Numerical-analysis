@@ -67,14 +67,25 @@ public:
         if (cols != other.rows) {
             throw std::invalid_argument("Число столбцов первой матрицы должно быть равно числу строк второй матрицы");
         }
-
-        Matrix<T> result(rows, other.cols, 0);
-
+        Matrix<T> result(rows, other.cols, 0);  // Результирующая матрица, инициализирована нулями
         for (size_t i = 0; i < rows; ++i) {
             for (size_t j = 0; j < other.cols; ++j) {
                 for (size_t k = 0; k < cols; ++k) {
-                    result.at(i, j) += data[i][k] * other.at(k, j);
+                    result.data[i][j] += data[i][k] * other.data[k][j];
                 }
+            }
+        }
+        return result;
+    }
+
+    Matrix<T> operator-(const Matrix<T>& other) const {
+        if (rows != other.rows || cols != other.cols) {
+            throw std::invalid_argument("Размеры матриц должны быть одинаковыми для вычитания.");
+        }
+        Matrix<T> result(rows, cols, 0);  // Обратите внимание на использование cols, а не other.cols
+        for (size_t i = 0; i < rows; ++i) {
+            for (size_t j = 0; j < cols; ++j) {  // Используем cols, так как оба массива должны быть одинаковыми по размеру
+                result.data[i][j] = data[i][j] - other.data[i][j];
             }
         }
 
@@ -95,14 +106,12 @@ public:
     }
 
     Matrix<T> operator~() const {
-        Matrix<T> result(cols, rows); // Создаем новую матрицу с обратными размерами
-
+        Matrix<T> result(cols, rows);  // Создаем новую матрицу с обратными размерами
         for (size_t i = 0; i < rows; ++i) {
             for (size_t j = 0; j < cols; ++j) {
-                result.at(j, i) = data[i][j]; // Копируем элементы с транспонированием
+                result.data[j][i] = data[i][j];  // Копируем элементы с транспонированием
             }
         }
-
         return result;
     }
 
@@ -133,6 +142,14 @@ public:
             std::cout << x_ << ' ' << this->at(i, this->getCols() - 1) << std::endl;
             x_ = 0;
         }
+    }
+
+    static Matrix<T> identity(int n) {
+        Matrix<T> I(n, n, 0);  // Инициализируем матрицу, заполняя её нулями
+        for (int i = 0; i < n; ++i) {
+            I.data[i][i] = static_cast<T>(1);  // Присваиваем единицу на диагонали
+        }
+        return I;
     }
 
     size_t getRows() const { return rows; }
