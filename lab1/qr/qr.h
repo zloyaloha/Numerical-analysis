@@ -12,6 +12,23 @@ double norm(const Matrix<double>& v) {
     return std::sqrt(sum);
 }
 
+double characteristicRoots(double a, double b, double c, double d, double alpha) {
+    double trace = a + d;
+    double det = a * d - b * c;
+
+    double discriminant = trace * trace - 4 * det;
+
+    if (discriminant < 0) {
+        double realPart = trace / 2;
+        double imagPart = sqrt(-discriminant) / 2;
+        std::cout << "Корни характеристического уравнения (комплексные):\n";
+        std::cout << "λ1 = " << realPart << " + " << imagPart << "i\n";
+        std::cout << "λ2 = " << realPart << " - " << imagPart << "i\n";
+        std::cout << "Корень характеристического уравнения (не комплексный):\n";
+        std::cout << "λ2 = " << alpha << std::endl;
+    }
+    return discriminant;
+}
 
 class QR {
 private:
@@ -19,7 +36,7 @@ private:
     bool isConverged(const Matrix<double>& A, double eps);
 public:
     QR() = default;
-    Matrix<double>  decompose(Matrix<double> A, const double& eps);
+    void decompose(Matrix<double> A, const double& eps);
 };
 
 bool QR::isConverged(const Matrix<double>& A, double eps) {
@@ -38,33 +55,21 @@ std::pair<Matrix<double>, Matrix<double>> QR::householder(Matrix<double> A)
     Matrix<double> Q = Matrix<double>::identity(n);
 
     for (int k = 0; k < n - 1; ++k) {
-        // Подвектор x (только нижняя часть столбца)
         Matrix<double> x(n - k, 1, 0.0);
         for (int i = k; i < n; ++i)
             x.at(i - k, 0) = R.at(i, k);
 
-        // Вектор e
         Matrix<double> e(n - k, 1, 0.0);
         e.at(0, 0) = 1.0;
 
-        // Вычисление alpha
         double alpha = norm(x);
         if (x.at(0, 0) >= 0)
             alpha = -alpha;
 
-        // Вектор v = x - alpha * e
         Matrix<double> v = x - e * alpha;
 
-        // Нормализация v
-        double v_norm = norm(v);
-        if (v_norm > 1e-12) {
-            v = v * (1.0 / v_norm);
-        }
-
-        // Матрица Хаусхолдера H_sub = I - 2vv^T
         Matrix<double> H_sub = Matrix<double>::identity(n - k) - (v * ~v) * (2.0 / ((~v * v).at(0, 0)));
 
-        // Встраиваем H_sub в полную H
         Matrix<double> H = Matrix<double>::identity(n);
         for (int i = k; i < n; ++i)
             for (int j = k; j < n; ++j)
@@ -77,7 +82,7 @@ std::pair<Matrix<double>, Matrix<double>> QR::householder(Matrix<double> A)
     return {Q, R};
 }
 
-Matrix<double> QR::decompose(Matrix<double> A, const double& eps) {
+void QR::decompose(Matrix<double> A, const double& eps) {
     int n = A.getCols();
     int iter = 0;
     while (true) {
@@ -85,13 +90,27 @@ Matrix<double> QR::decompose(Matrix<double> A, const double& eps) {
         auto [Q, R] = householder(A);
         A = (R * Q);
         if (isConverged(A, eps)) {
-            return A;
+            std::cout << "EIGENVALUES!\n";
+            for (int i = 0; i < A.getCols(); ++i) {
+                std::cout << A.at(i, i) << '\n';
+            }
+            return;
+        }
+        if (std::sqrt(A.at(2, 0) * A.at(2, 0)) < eps && (std::sqrt(A.at(1, 0) * A.at(1, 0)) > eps || std::sqrt(A.at(2, 1) * A.at(2, 1)) > eps)) {
+            double discr;
+            if (std::sqrt(A.at(1, 0) * A.at(1, 0)) > eps) {
+                discr = characteristicRoots(A.at(0, 0), A.at(0, 1), A.at(1, 0), A.at(0, 1), A.at(2, 2));
+            }
+            if (std::sqrt(A.at(2, 1) * A.at(2, 1)) > eps) {
+                discr = characteristicRoots(A.at(1, 1), A.at(1, 2), A.at(2, 1), A.at(2, 2), A.at(0, 0));
+            }
+            if (discr < 0) {
+                return;
+            }
         }
         if (iter == MAX_ITER) {
             std::cerr << "Не удалось достичь желаемой точности за " << iter << " итераций\n";
-            return A;
+            return;
         }
-
-        A.print(); std::cout << std::endl;
     }
 }
