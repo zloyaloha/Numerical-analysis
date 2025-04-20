@@ -1,0 +1,2 @@
+add_subdirectory(equation)
+add_subdirectory(system)
