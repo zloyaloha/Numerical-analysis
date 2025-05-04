@@ -3,7 +3,7 @@
 
 int main() {
     Zeydel tr;
-    Matrix<double> mat("/home/zloyaloha/programming/Numerical-analysis/lab1/zeydel/test/test.txt");
+    Matrix<double> mat("/home/zloyaloha/Yandex.Disk/MAI/Numerical-analysis/lab1/zeydel/test/test.txt");
     std::vector<double> res = tr.solve(mat);
     for (auto& x: res) {
         std::cout << x << ' ';

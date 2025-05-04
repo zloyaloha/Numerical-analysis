@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <functional>
 
 template <typename T>
 class Matrix {

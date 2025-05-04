@@ -3,7 +3,7 @@
 
 int main() {
     Rotating rot(0.0000001);
-    Matrix<long double> mat("/home/zloyaloha/programming/Numerical-analysis/lab1/rotating/test/text.txt");
+    Matrix<long double> mat("/home/zloyaloha/Yandex.Disk/MAI/Numerical-analysis/lab1/rotating/test/text.txt");
     auto [eigenvalues, eigenvectors] =  rot.solve(mat);
 
     for (int i = 0; i < eigenvalues.size(); ++i) {

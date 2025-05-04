@@ -5,21 +5,27 @@ double f(const double& x) {
     return x * std::exp(x) + std::pow(x, 2) - 1;
 }
 
-double df(const double& x) {
+double df(const double& x) {1 / (std::exp(x) + x);
     return std::exp(x) + x * std::exp(x) + 2 * x;
+}
+
+double ddf(const double& x) {
+    return 2 * std::exp(x) + x * std::exp(x) + 2;
 }
 
 double phi(const double& x) {
     return 1 / (std::exp(x) + x);
-    // return std::sqrt(1 - x * std::exp(x));
-    // return (1 - x * x) / std::exp(x);
+}
+
+double dphi(const double& x) {
+    return -(std::exp(x) + 1) / std::pow(std::exp(x) + x, 2);
 }
 
 int main() {
     double eps;
     std::cin >> eps;
-    NonLinear nl(eps, 0.5);
-    double res = nl.Newton(f, df);
+    NonLinear nl(eps);
+    double res = nl.Newton(f, df, ddf, 0, 0.5);
     std::cout << res << std::endl;
 
     if (std::fabs(f(res)) < eps) {
@@ -28,7 +34,7 @@ int main() {
         std::cout << "Корень найден не верно\n";
     }
 
-    res = nl.SimpleIter(phi);
+    res = nl.SimpleIter(phi, dphi, -1.3, -1);
     std::cout << res << std::endl;
 
     if (fabs(f(res)) < eps) {

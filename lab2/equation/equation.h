@@ -16,10 +16,32 @@ private:
     double _x0;
 
 public:
-    NonLinear(const double& eps, const double& x0): _eps(eps), _x0(x0) {}
+    NonLinear(const double& eps): _eps(eps) {}
 
-    double Newton(std::function<double(const double&)> f, std::function<double(const double&)> df)
+    double Newton(std::function<double(const double&)> f, std::function<double(const double&)> df, std::function<double(const double&)> ddf, const double& a, const double& b)
     {
+        if (f(a) * f(b) > 0) {
+            std::cerr << "Корня на отрезке нет" << std::endl;
+            return 0;
+        }
+
+        if (df(_x0) == 0) {
+            std::cerr << "Производная ноль" << std::endl;
+            return 0;
+        }
+
+        bool flag = false;
+        for (double i = a; i < b; i += 0.05) {
+            if (f(i) * ddf(i) > 0) {
+                _x0 = i;
+                flag = true;
+            }
+        }
+        if (!flag) {
+            std::cerr << "Может не сойтись" << std::endl;
+            _x0 = a;
+        }
+
         double x = _x0;
         for (int i = 0; i < MAX_ITER; ++i) {
             double fx = f(x);
@@ -37,14 +59,29 @@ public:
         return x;
     }
 
-    // на интервале от (0.4; 0.6) модуль производной меньше 0.7
-    double SimpleIter(std::function<double(const double&)> phi)
+    double SimpleIter(std::function<double(const double&)> phi, std::function<double(const double&)> dphi, const double& a, const double& b)
     {
+        bool flag = false;
+        double q = 0;
+        double _x0 = 0;
+        for (double i = a; i <= b; i += 0.05) {
+            std::cout << std::fabs(dphi(i)) << ' ' << i << std::endl;
+            if (q < std::fabs(dphi(i))) {
+                q = std::fabs(dphi(i));
+                _x0 = i;
+            }
+        }
+
+        std::cout << "q = " << q << ' ' << "x0 = " << _x0 << std::endl;
+        if (q >= 1) {
+            std::cerr << "Может не сойтись" << std::endl;
+        }
+
         double x = _x0;
-        double x_next = 0;
+        double x_next;
         for (int i = 0; i < MAX_ITER; ++i) {
             x_next = phi(x);
-            if ((0.7 / (1 - 0.7)) * fabs(x_next - x) < _eps) {
+            if ((q / (1 - q)) * fabs(x_next - x) < _eps) {
                 std::cout << "Решение найдено за " << i + 1 << " итераций." << std::endl;
                 return x_next;
             }
