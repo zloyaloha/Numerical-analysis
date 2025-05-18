@@ -12,6 +12,10 @@ public:
 
     double findIntegralRectangle(std::function<double(double)> f, double h)
     {
+        if (std::fmod(b - a, h) > 1e-14) {
+            std::cerr << "[Warning] Step h=" << h << " does not evenly divide interval [" << a << ", " << b << "]. "
+                      << "The last segment will be ignored.\n";
+        }
         double sum = 0;
         for (double x = a; x < b; x += h) {
             double xi = (x + x + h) / 2;
@@ -22,6 +26,10 @@ public:
 
     double findIntegralTrapezoid(std::function<double(double)> f, double h)
     {
+        if (std::fmod(b - a, h) > 1e-14) {
+            std::cerr << "[Warning] Step h=" << h << " does not evenly divide interval [" << a << ", " << b << "]. "
+                      << "The last segment will be ignored.\n";
+        }
         double sum = (f(a) + f(b)) / 2.0;
         for (double x = a + h; x < b; x += h) {
             sum += f(x);
@@ -31,9 +39,15 @@ public:
 
     double findIntegralSimpson(std::function<double(double)> f, double h)
     {
-        int n = (b - a) / h;
+        int n = static_cast<int>((b - a) / h);
         if (n % 2 != 0) ++n; // делаем n чётным
-        h = (b - a) / n;
+        double new_h = (b - a) / n;
+
+        if (std::fabs(new_h - h) > 1e-14) {
+            std::cerr << "[Info] Step h adjusted from " << h << " to " << new_h << " to fit even number of intervals.\n";
+        }
+
+        h = new_h;
 
         double sum = f(a) + f(b);
         for (int i = 1; i < n; ++i) {
@@ -46,4 +60,4 @@ public:
     double rungeRomberg(double I_h, double I_h2, int p) {
         return I_h2 + (I_h2 - I_h) / (std::pow(2, p) - 1);
     }
-};  
+};

@@ -34,10 +34,11 @@ public:
 
     double findSecondDerivative(const std::vector<double>& x, const std::vector<double>& y, double x_star)
     {
-        int idx;
-        for (int i = 0; i < x.size(); ++i) {
-            if (x[i] <= x_star) {
-                idx = i - 1;
+        int idx = -1;
+        for (int i = 0; i < x.size() - 1; ++i) {
+            if (x[i] <= x_star && x_star <= x[i + 1]) {
+                idx = i;
+                break;
             }
         }
 

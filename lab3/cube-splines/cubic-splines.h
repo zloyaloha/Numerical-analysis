@@ -51,7 +51,7 @@ public:
     double evaluate(double x_star) const {
         auto it = std::upper_bound(segments.begin(), segments.end(), x_star,
             [](double val, const SplineSegment& seg) { return val < seg.x1; });
-        
+
         if (it == segments.begin()) return segments.front().a;
 
         if (it == segments.end()) {
@@ -63,5 +63,32 @@ public:
         const SplineSegment& s = *(it - 1);
         double dx = x_star - s.x1;
         return s.a + s.b*dx + s.c*dx*dx + s.d*dx*dx*dx;
+    }
+
+    void printPolynomials() const {
+        std::cout << "Кусочно-кубические многочлены сплайна:\n";
+        std::cout << "Интервал [x_i, x_{i+1}]:\n";
+        std::cout << "S_i(x) = a + b*(x - x_i) + c*(x - x_i)^2 + d*(x - x_i)^3\n\n";
+
+        for (size_t i = 0; i < segments.size(); ++i) {
+            const auto& s = segments[i];
+            std::cout << "Интервал [" << s.x1 << ", " << s.x2 << "]:\n";
+            std::cout << "  a = " << s.a << "\n";
+            std::cout << "  b = " << s.b << "\n";
+            std::cout << "  c = " << s.c << "\n";
+            std::cout << "  d = " << s.d << "\n";
+            std::cout << "  Многочлен: S_" << i << "(x) = "
+                    << s.a << " + "
+                    << s.b << "*(x - " << s.x1 << ") + "
+                    << s.c << "*(x - " << s.x1 << ")^2 + "
+                    << s.d << "*(x - " << s.x1 << ")^3\n\n";
+        }
+    }
+
+    void writeToFile(const std::string& filename, double step = 0.01) const {
+        std::ofstream file(filename);
+        for (double xi = segments.front().x1; xi <= segments.back().x2; xi += step) {
+            file << xi << " " << evaluate(xi) << "\n";
+        }
     }
 };
