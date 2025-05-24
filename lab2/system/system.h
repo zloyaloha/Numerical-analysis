@@ -30,7 +30,7 @@ public:
             system.at(0, 0) = J.at(0, 0)(x1, x2);
             system.at(0, 1) = J.at(0, 1)(x1, x2);
             system.at(0, 2) = -f1(x1, x2);
-    
+
             system.at(1, 0) = J.at(1, 0)(x1, x2);
             system.at(1, 1) = J.at(1, 1)(x1, x2);
             system.at(1, 2) = -f2(x1 , x2);
@@ -38,11 +38,12 @@ public:
             double norm = std::sqrt(std::pow(system.at(0, 2), 2) + std::pow(system.at(1, 2), 2));
 
             if (norm < _eps) {
+                std::cout << "Решение найдено за " << iter << " итераций" << std::endl;
                 return {x1, x2};
             }
 
             std::vector<double> x = lu.solve(system);
-            
+
             x1 += x[0]; x2 += x[1];
             ++iter;
         }
@@ -69,7 +70,7 @@ public:
                         max_q = sum;
                         x1 = i;
                         x2 = j;
-                    }   
+                    }
                 }
             }
         }
@@ -84,14 +85,18 @@ public:
             double x1_new = phi1(x1, x2);
             double x2_new = phi2(x1, x2);
 
-            double delta = std::max(std::fabs(x2_new - x1), std::fabs(x2_new - x2));
+            double delta = std::max(std::fabs(x1_new - x1), std::fabs(x2_new - x2));
 
-            if (delta < _eps) break;
+            if (delta < _eps) {
+                std::cout << "Решение найдено за " << iter << " итераций" << std::endl;
+                return {x1, x2};
+            }
 
             x1 = x1_new;
             x2 = x2_new;
             iter++;
         }
+        std::cout << "Решение не удалось найти за " << MAX_ITER << " итераций" << std::endl;
         return {x1, x2};
     }
 };

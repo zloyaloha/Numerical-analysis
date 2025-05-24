@@ -70,7 +70,7 @@ int main() {
     if (f1(res[0], res[1]) > eps || f2(res[0], res[1]) > eps) {
         std::cerr << "Решение не прошло проверку" << std::endl;
     } else {
-        std::cerr << "Решение найдено успешно" << std::endl;
+        std::cerr << "Решение прошло проверку" << std::endl;
     }
     for (const double& x: res) {
         std::cout << x << ' ';
@@ -87,7 +87,7 @@ int main() {
     if (f1(res[0], res[1]) > eps || f2(res[0], res[1]) > eps) {
         std::cerr << "Решение не прошло проверку" << std::endl;
     } else {
-        std::cerr << "Решение найдено успешно" << std::endl;
+        std::cerr << "Решение прошло проверку" << std::endl;
     }
     for (const double& x: res) {
         std::cout << x << ' ';

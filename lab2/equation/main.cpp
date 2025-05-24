@@ -34,7 +34,7 @@ int main() {
         std::cout << "Корень найден не верно\n";
     }
 
-    res = nl.SimpleIter(phi, dphi, -1.3, -1);
+    res = nl.SimpleIter(phi, dphi, 0.3, 0.5);
     std::cout << res << std::endl;
 
     if (fabs(f(res)) < eps) {

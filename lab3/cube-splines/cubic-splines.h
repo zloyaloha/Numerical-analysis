@@ -22,7 +22,7 @@ private:
         if (x.size() < 2) {
             throw std::invalid_argument("At least 2 points are required for spline interpolation");
         }
-        
+
         for (size_t i = 1; i < x.size(); ++i) {
             if (x[i] <= x[i-1]) {
                 throw std::invalid_argument("x values must be strictly increasing");
@@ -34,11 +34,11 @@ private:
         if (std::abs(y_points[0] - evaluate(x_points[0])) >= eps) {
             return false;
         }
-        
+
         if (std::abs(y_points.back() - evaluate(x_points.back())) >= eps) {
             return false;
         }
-        
+
         return true;
     }
 
@@ -55,7 +55,7 @@ private:
         for (size_t i = 1; i < x_points.size() - 1; ++i) {
             double left_deriv = derivative(x_points[i], i-1, 1);
             double right_deriv = derivative(x_points[i], i, 1);
-            
+
             if (std::abs(left_deriv - right_deriv) >= eps) {
                 return false;
             }
@@ -67,7 +67,7 @@ private:
         for (size_t i = 1; i < x_points.size() - 1; ++i) {
             double left_deriv = derivative(x_points[i], i-1, 2);
             double right_deriv = derivative(x_points[i], i, 2);
-            
+
             if (std::abs(left_deriv - right_deriv) >= eps) {
                 return false;
             }
@@ -79,11 +79,11 @@ private:
         if (std::abs(derivative(x_points[0], 0, 2)) >= eps) {
             return false;
         }
-        
+
         if (std::abs(derivative(x_points.back(), segments.size()-1, 2)) >= eps) {
             return false;
         }
-        
+
         return true;
     }
 
@@ -91,10 +91,10 @@ private:
         if (segment_idx >= segments.size()) {
             throw std::out_of_range("Invalid segment index");
         }
-        
+
         const SplineSegment& s = segments[segment_idx];
         double dx = x - s.x1;
-        
+
         switch (order) {
             case 1:  // First derivative
                 return s.b + 2*s.c*dx + 3*s.d*dx*dx;
@@ -145,9 +145,10 @@ public:
     }
 
     double evaluate(double x_star) const {
-        if (x_star > segments[segments.size() - 1].x1 || x_star < segments[0].x1) {
-            throw std::range_error("X not in range");
-        }
+        // std::cout << segments[segments.size() - 1].x1 << ' ' << x_star << ' ' << segments[0].x1 << std::endl;
+        // if (x_star > segments[segments.size() - 1].x1 || x_star < segments[0].x1) {
+        //     throw std::range_error("X not in range");
+        // }
         auto it = std::upper_bound(segments.begin(), segments.end(), x_star,
             [](double val, const SplineSegment& seg) { return val < seg.x1; });
 
@@ -192,10 +193,10 @@ public:
     }
 
     bool validateSpline() const {
-        return checkEdgeNodes() && 
-               checkInternalNodesContinuity() && 
-               checkFirstDerivativeContinuity() && 
-               checkSecondDerivativeContinuity() && 
+        return checkEdgeNodes() &&
+               checkInternalNodesContinuity() &&
+               checkFirstDerivativeContinuity() &&
+               checkSecondDerivativeContinuity() &&
                checkEdgeSecondDerivatives();
     }
 };

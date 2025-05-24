@@ -65,10 +65,9 @@ public:
     double SimpleIter(std::function<double(const double&)> phi, std::function<double(const double&)> dphi, const double& a, const double& b)
     {
         bool flag = false;
-        double q = 0;
+        double q = -10e5;
         double _x0 = 0;
         for (double i = a; i <= b; i += 0.05) {
-            std::cout << std::fabs(dphi(i)) << ' ' << i << std::endl;
             if (q < std::fabs(dphi(i))) {
                 q = std::fabs(dphi(i));
                 _x0 = i;
@@ -88,7 +87,7 @@ public:
                 std::cout << "Решение найдено за " << i + 1 << " итераций." << std::endl;
                 return x_next;
             }
-            
+
             x = x_next;
         }
         std::cerr << "Достигнуто максимальное число итераций!" << std::endl;

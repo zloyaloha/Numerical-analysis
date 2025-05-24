@@ -24,11 +24,11 @@ public:
             double right, left;
             if (idx + 1 < x.size()) {
                 right = (y[idx + 1] - y[idx]) / (x[idx + 1] - x[idx]);
-                std::cout << "Правосторонняя производная " << right << '\n';
+                std::cout << "Правосторонняя первая производная " << right << '\n';
             }
             if (idx != 0) {
                 left = (y[idx] - y[idx - 1]) / (x[idx] - x[idx - 1]);
-                std::cout << "Левосторонняя производная " << left << '\n';
+                std::cout << "Левосторонняя первая производная " << left << '\n';
             }
         }
 

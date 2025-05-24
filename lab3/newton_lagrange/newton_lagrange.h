@@ -35,10 +35,10 @@ public:
         for (int i = 0; i < X.size(); ++i) {
             if (i != 0) oss << " + ";
             oss << std::setprecision(6) << Y[i];
-            
+
             for (int j = 0; j < X.size(); ++j) {
                 if (i != j) {
-                    oss << " * (x - " << X[j] << ")/(" << X[i] << " - " << X[j] << ")";
+                    oss << "*(x-" << X[j] << ")/(" << X[i] - X[j] << ")";
                 }
             }
         }
@@ -93,7 +93,7 @@ public:
     std::string getPolynomial() const {
         std::ostringstream oss;
         oss << std::setprecision(6) << coefs[0];
-        
+
         for (int i = 1; i < X.size(); ++i) {
             oss << " + " << coefs[i];
             for (int j = 0; j < i; ++j) {

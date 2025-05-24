@@ -51,18 +51,11 @@ int main()
     std::vector<double> Y2(X2.size());
     std::transform(X2.begin(), X2.end(), Y2.begin(), f);
 
-    // std::vector<double> X1 = {0.1, 0.5, 1.1, 1.3};
-    // std::vector<double> Y1(X1.size());
-    // std::transform(X1.begin(), X1.end(), Y1.begin(), f);
+    std::vector<double> X1 = {0.1, 0.5, 1.1, 1.3};
+    std::vector<double> Y1(X1.size());
+    std::transform(X1.begin(), X1.end(), Y1.begin(), f);
 
-    // std::vector<double> X1 = {10, 50, 90, 130};
-    // std::vector<double> Y1(X1.size());
-    // std::transform(X1.begin(), X1.end(), Y1.begin(), f);
-
-    std::vector<double> X1 = {0., 3., 4.};
-    std::vector<double> Y1 = {6, 0, 1};
-
-    double x = -10;
+    double x = 0.3;
     double real_val = f(x);
 
     LagrangeInterpolator inter (X1, Y1);

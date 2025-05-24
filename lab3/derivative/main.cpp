@@ -12,8 +12,8 @@ int main() {
     std::vector<double> x = {0., 0.1, 0.2, 0.3, 0.4};
     std::vector<double> y = {1., 1.1052, 1.2214, 1.3499, 1.4918};
 
-    double first = der.findFirstDerivative(x, y, 0.15);
+    double first = der.findFirstDerivative(x, y, 0.1);
     double second = der.findSecondDerivative(x, y, 0.2);
-   std::cout << "Первая производная " << first << '\n';
+   std::cout << "Первая производная со вторым порядком точности " << first << '\n';
    std::cout << "Вторая производная " << second << '\n';
 }
