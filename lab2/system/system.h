@@ -69,11 +69,11 @@ public:
                         max_q = sum;
                         x1 = i;
                         x2 = j;
-                    }
+                    }   
                 }
             }
         }
-        
+        std::cout << "q = " << max_q << std::endl;
         if (max_q >= 1) {
             std::cerr << "Может не сойтись" << std::endl;
             std::cout << max_q << std::endl;

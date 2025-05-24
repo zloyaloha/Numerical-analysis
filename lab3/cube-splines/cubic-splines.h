@@ -11,8 +11,104 @@ private:
         double x1, x2;
     };
     std::vector<SplineSegment> segments;
+
+    std::vector<double> x_points, y_points;
+    double eps{0.01};
+
+    void validateInput(const std::vector<double>& x, const std::vector<double>& y) {
+        if (x.size() != y.size()) {
+            throw std::invalid_argument("x and y vectors must have the same size");
+        }
+        if (x.size() < 2) {
+            throw std::invalid_argument("At least 2 points are required for spline interpolation");
+        }
+        
+        for (size_t i = 1; i < x.size(); ++i) {
+            if (x[i] <= x[i-1]) {
+                throw std::invalid_argument("x values must be strictly increasing");
+            }
+        }
+    }
+
+    bool checkEdgeNodes() const {
+        if (std::abs(y_points[0] - evaluate(x_points[0])) >= eps) {
+            return false;
+        }
+        
+        if (std::abs(y_points.back() - evaluate(x_points.back())) >= eps) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    bool checkInternalNodesContinuity() const {
+        for (size_t i = 1; i < x_points.size() - 1; ++i) {
+            if (std::abs(y_points[i] - evaluate(x_points[i])) >= eps) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool checkFirstDerivativeContinuity() const {
+        for (size_t i = 1; i < x_points.size() - 1; ++i) {
+            double left_deriv = derivative(x_points[i], i-1, 1);
+            double right_deriv = derivative(x_points[i], i, 1);
+            
+            if (std::abs(left_deriv - right_deriv) >= eps) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool checkSecondDerivativeContinuity() const {
+        for (size_t i = 1; i < x_points.size() - 1; ++i) {
+            double left_deriv = derivative(x_points[i], i-1, 2);
+            double right_deriv = derivative(x_points[i], i, 2);
+            
+            if (std::abs(left_deriv - right_deriv) >= eps) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    bool checkEdgeSecondDerivatives() const {
+        if (std::abs(derivative(x_points[0], 0, 2)) >= eps) {
+            return false;
+        }
+        
+        if (std::abs(derivative(x_points.back(), segments.size()-1, 2)) >= eps) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    double derivative(double x, size_t segment_idx, int order) const {
+        if (segment_idx >= segments.size()) {
+            throw std::out_of_range("Invalid segment index");
+        }
+        
+        const SplineSegment& s = segments[segment_idx];
+        double dx = x - s.x1;
+        
+        switch (order) {
+            case 1:  // First derivative
+                return s.b + 2*s.c*dx + 3*s.d*dx*dx;
+            case 2:  // Second derivative
+                return 2*s.c + 6*s.d*dx;
+            default:
+                throw std::invalid_argument("Only 1st and 2nd derivatives are supported");
+        }
+    }
+
 public:
-    CubicSplines(const std::vector<double>& x, const std::vector<double>& y) {
+
+    CubicSplines(const std::vector<double>& x, const std::vector<double>& y) : x_points(x), y_points(y) {
+        validateInput(x, y);
         const int n = x.size() - 1;
         std::vector<double> h(n);
         for (int i = 0; i < n; ++i) {
@@ -49,6 +145,9 @@ public:
     }
 
     double evaluate(double x_star) const {
+        if (x_star > segments[segments.size() - 1].x1 || x_star < segments[0].x1) {
+            throw std::range_error("X not in range");
+        }
         auto it = std::upper_bound(segments.begin(), segments.end(), x_star,
             [](double val, const SplineSegment& seg) { return val < seg.x1; });
 
@@ -90,5 +189,13 @@ public:
         for (double xi = segments.front().x1; xi <= segments.back().x2; xi += step) {
             file << xi << " " << evaluate(xi) << "\n";
         }
+    }
+
+    bool validateSpline() const {
+        return checkEdgeNodes() && 
+               checkInternalNodesContinuity() && 
+               checkFirstDerivativeContinuity() && 
+               checkSecondDerivativeContinuity() && 
+               checkEdgeSecondDerivatives();
     }
 };

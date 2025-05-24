@@ -58,6 +58,6 @@ public:
     }
 
     double rungeRomberg(double I_h, double I_h2, int p) {
-        return I_h2 + (I_h2 - I_h) / (std::pow(2, p) - 1);
+        return I_h2 + (I_h2 - I_h) / (std::pow(I_h2 / I_h, p) - 1);
     }
 };

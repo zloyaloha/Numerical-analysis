@@ -11,7 +11,7 @@ double f(double x)
 }
 
 int main() {
-    Integral integral(0., 2.5);
+    Integral integral(0., 2.75);
 
     double I_rect_1 = integral.findIntegralRectangle(f, 0.25);
     double I_rect_2 = integral.findIntegralRectangle(f, 0.5);

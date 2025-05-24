@@ -47,6 +47,9 @@ public:
             double fx = f(x);
             double dfx = df(x);
 
+            if (dfx == 0) {
+                throw std::runtime_error("diff is zero");
+            }
             double delta = fx / dfx;
             x -= delta;
 

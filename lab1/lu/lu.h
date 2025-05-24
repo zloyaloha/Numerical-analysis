@@ -72,6 +72,10 @@ public:
     {
         auto [L, U] = decompose(A);
 
+        if (determinant(L, U) == 0) {
+            throw std::runtime_error("Determinant is zero");
+        }
+
         std::vector<double> x;
         for (int i = 0; i < A.getRows(); ++i) {
             x.push_back(A.at(i, A.getCols() - 1));

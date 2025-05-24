@@ -10,9 +10,25 @@ public:
     {
         int idx = -1;
         for (int i = 0; i < x.size() - 1; ++i) {
-            if (x[i] <= x_star && x_star <= x[i + 1]) {
-                idx = i;
+            if (x[i] < x_star && x_star <= x[i + 1]) {
+                idx = i + 1;
                 break;
+            }
+        }
+
+        if (x[0] == x_star) {
+            idx = 0;
+        }
+
+        if (x[idx] == x_star) {
+            double right, left;
+            if (idx + 1 < x.size()) {
+                right = (y[idx + 1] - y[idx]) / (x[idx + 1] - x[idx]);
+                std::cout << "Правосторонняя производная " << right << '\n';
+            }
+            if (idx != 0) {
+                left = (y[idx] - y[idx - 1]) / (x[idx] - x[idx - 1]);
+                std::cout << "Левосторонняя производная " << left << '\n';
             }
         }
 
@@ -42,10 +58,13 @@ public:
             }
         }
 
-        double drob11 = (y[idx + 2] - y[idx + 1]) / (x[idx + 2] - x[idx + 1]);
-        double drob12 = (y[idx + 1] - y[idx]) / (x[idx + 1] - x[idx]);
-        double drob2 = 2 / (x[idx + 2] - x[idx]);
-
-        return (drob11 - drob12) * drob2;
+        if (idx > 0 && idx < x.size() - 2) {
+            double drob11 = (y[idx + 2] - y[idx + 1]) / (x[idx + 2] - x[idx + 1]);
+            double drob12 = (y[idx + 1] - y[idx]) / (x[idx + 1] - x[idx]);
+            double drob2 = 2 / (x[idx + 2] - x[idx]);
+            return (drob11 - drob12) * drob2;
+        } else {
+            throw std::out_of_range("x* слишком с краю");
+        }
     }
 };

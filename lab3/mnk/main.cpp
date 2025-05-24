@@ -23,7 +23,7 @@ int main() {
     std::cout << "Ошибка " << mnk.calculateSSE(x, y, p1) << std::endl;
     std::cout << "Полином 2-й степени: y = " << p2[0] << " + " << p2[1] << "x + " << p2[2] << "x^2\n";
     std::cout << "Ошибка " << mnk.calculateSSE(x, y, p2) << std::endl;
-    std::cout << "Полином 3-й степени: y = " << p3[0] << " + " << p3[1] << "x + " << p3[2] << "x^2\n";
+    std::cout << "Полином 3-й степени: y = " << p3[0] << " + " << p3[1] << "x + " << p3[2] << "x^2 + " << p3[3] << "x^3\n";
     std::cout << "Ошибка " << mnk.calculateSSE(x, y, p3) << std::endl;
 
     std::ofstream data("data.txt");

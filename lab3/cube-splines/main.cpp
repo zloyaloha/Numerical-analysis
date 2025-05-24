@@ -16,6 +16,7 @@ int main() {
 
     double x_star = 0.8;
     CubicSplines spline(x, y);
+    spline.validateSpline();
 
     std::cout << "S(" << x_star << ") = " << spline.evaluate(x_star) << std::endl;
 

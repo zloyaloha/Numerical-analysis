@@ -59,10 +59,10 @@ int main()
     // std::vector<double> Y1(X1.size());
     // std::transform(X1.begin(), X1.end(), Y1.begin(), f);
 
-    std::vector<double> X1 = {-1., 0., 3., 4.};
-    std::vector<double> Y1 = {-2., 6, 0, 1};
+    std::vector<double> X1 = {0., 3., 4.};
+    std::vector<double> Y1 = {6, 0, 1};
 
-    double x = 0.8;
+    double x = -10;
     double real_val = f(x);
 
     LagrangeInterpolator inter (X1, Y1);
@@ -75,6 +75,7 @@ int main()
     std::cout << "Погрешность " << std::fabs(val - real_val) << std::endl;
 
     val = newton_inter.interpolate(x);
+    newton_inter.printPolynomial();
 
     std::cout << "Приближение в точке x = " << x << " методом Ньютона P(x) = " << val << '\n';
     std::cout  << "Реальное значение функции в точке f(x) = " << real_val << std::endl;
@@ -87,6 +88,7 @@ int main()
 
     inter.setNewPoints(X2, Y2);
     val = inter.interpolate(x);
+    inter.printPolynomial();
 
     std::cout << "Приближение в точке x = " << x << " методом Лагранжа P(x) = " << val << '\n';
     std::cout  << "Реальное значение функции в точке f(x) = " << real_val << std::endl;
