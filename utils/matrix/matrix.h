@@ -16,6 +16,25 @@ public:
         data.resize(rows, std::vector<T>(cols));
     }
 
+    Matrix(const std::vector<T>& main, const std::vector<T>& down, const std::vector<T>& upper, const std::vector<T>& right) : rows(main.size()), cols(main.size() + 1) {
+        int n = main.size();
+        data.resize(n, std::vector<T>(n + 1, 0.));
+
+        for (int i = 0; i < n; ++i) {
+            data[i][i] = main[i];
+
+            if (i > 0) {
+                data[i][i - 1] = down[i - 1];
+            }
+
+            if (i < n - 1) {
+                data[i][i + 1] = upper[i];
+            }
+
+            data[i][n] = right[i];
+        }
+    }
+
     Matrix(const std::string& filename) {
         std::ifstream file(filename);
         if (!file.is_open()) {

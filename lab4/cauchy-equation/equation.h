@@ -190,18 +190,25 @@ void Solver::grafics(const std::vector<Point>& results, std::function<double(con
 void Solver::error(const std::vector<Point>& results, const std::vector<Point>& results_h2, std::function<double(const double&)> exact, double coef)
 {
     std::cout << '\n' << name << " table" << '\n';
-    std::cout << std::fixed << std::setprecision(6);
+    std::cout << std::fixed << std::setprecision(12);
     std::cout << "x\tY(h)\tY(h/2)\tRungeErr\tExact\tAbsErr" << std::endl;
     for (size_t i = 0; i < results.size(); ++i) {
         double x = results[i].x;
         double yh = results[i].y1;
 
-        double yh2 = results_h2[i * 2].y1;
+        auto it = std::find_if(results_h2.begin(), results_h2.end(), [&](const Point& p) {
+            return std::abs(p.x - x) < 1e-10;
+        });
 
-        double err_runge = fabs((yh2 - yh) / (pow(coef, p) - 1));
+        if (it == results_h2.end()) continue;
+
+        double yh2 = it->y1;
+
+        double err_runge = std::fabs((yh2 - yh) / (std::pow(coef, p) - 1));
 
         double y_exact = exact(x);
         double abs_err = std::fabs(yh - y_exact);
+
         std::cout << x << "\t" << yh << "\t" << yh2 << "\t" << err_runge << "\t\t" << y_exact << "\t" << abs_err << std::endl;
     }
 }

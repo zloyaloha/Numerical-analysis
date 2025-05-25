@@ -25,4 +25,13 @@ int main() {
 
     shooting_solver.error(res, res_h2, exact, 2);
     shooting_solver.grafics(res, exact);
+
+    FiniteDifferenceSolver finite_difference_solver(a, b, alpha, beta, 0.001);
+
+    std::vector<Point> res_finite_difference = finite_difference_solver.solve(f, h);
+    std::vector<Point> res_finite_difference_h2 = finite_difference_solver.solve(f, h / 2);
+
+    finite_difference_solver.error(res_finite_difference, res_finite_difference_h2, exact, 2);
+    finite_difference_solver.grafics(res_finite_difference, exact);
+
 }
