@@ -1,1 +1,2 @@
-add_subdirectory(equation)
+add_subdirectory(cauchy-equation)
+add_subdirectory(boundary-equation)
