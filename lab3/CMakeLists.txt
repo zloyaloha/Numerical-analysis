@@ -1,0 +1,5 @@
+add_subdirectory(newton_lagrange)
+add_subdirectory(cube-splines)
+add_subdirectory(mnk)
+add_subdirectory(derivative)
+add_subdirectory(integral)
