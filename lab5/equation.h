@@ -1,6 +1,10 @@
 #include "tridiagonal-matrix.h"
 #include <functional>
 #include <sstream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <iostream>
 
 std::vector<double> tma(const std::vector<double>& a,
                    const std::vector<double>& b,

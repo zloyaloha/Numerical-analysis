@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cmath>
 #include <iomanip>
+#include <sstream>
 
 struct Point {
     double x, y1, y2;
