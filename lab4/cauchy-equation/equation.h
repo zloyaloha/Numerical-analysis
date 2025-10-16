@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cmath>
 #include <iomanip>
+#include <algorithm>
 #include <sstream>
 
 struct Point {

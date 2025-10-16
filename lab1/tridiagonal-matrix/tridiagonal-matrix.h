@@ -47,3 +47,28 @@ public:
         return x;
     }
 };
+
+inline std::vector<double> tma(const std::vector<double>& a,
+                   const std::vector<double>& b,
+                   const std::vector<double>& c,
+                   const std::vector<double>& d)
+{
+    int n = b.size();
+    std::vector<double> alpha(n), beta(n), x(n);
+
+    alpha[0] = -c[0] / b[0];
+    beta[0] = d[0] / b[0];
+
+    for (int i = 1; i < n; ++i) {
+        double denom = b[i] + a[i] * alpha[i - 1];
+        alpha[i] = -c[i] / denom;
+        beta[i] = (d[i] - a[i] * beta[i - 1]) / denom;
+    }
+
+    x[n - 1] = beta[n - 1];
+    for (int i = n - 2; i >= 0; --i) {
+        x[i] = alpha[i] * x[i + 1] + beta[i];
+    }
+
+    return x;
+}
