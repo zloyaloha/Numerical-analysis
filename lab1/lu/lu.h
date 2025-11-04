@@ -3,7 +3,6 @@
 #include <vector>
 #include <cmath>
 #include "matrix.h"
-#include <iomanip>
 #include <stdexcept>
 
 class LU {

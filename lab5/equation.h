@@ -11,7 +11,7 @@ enum BoundType {
 };
 
 enum SolverType {
-    Explicit,
+    Explicit = 1,
     Implicit,
     Crank_Nicholson,
     Exact
@@ -28,19 +28,19 @@ struct EquationData {
 };
 
 class Parabolic {
-private:
+public:
     EquationData eq_data;
-    std::function<void(int,int)> solve_func;
+    std::function<std::string(int,int)> solve_func;
     double _h, _tau, _sigma, _a;
     std::ofstream fout;
 public:
     Parabolic(const EquationData& data, const SolverType& type);
-    void solve(int N, double sigma, double T, double a);
+    std::string solve(int N, double sigma, double T, double a);
 private:
-    void explicit_solve(int N, int K);
-    void implicit_solve(int N, int K);
-    void crank_nicolson_solve(int N, int K);
-    void exact(int N, int K);
+    std::string explicit_solve(int N, int K);
+    std::string implicit_solve(int N, int K);
+    std::string crank_nicolson_solve(int N, int K);
+    std::string exact(int N, int K);
 };
 
 class ParabolicPostProcessor {
@@ -48,7 +48,9 @@ private:
     std::ifstream ifs;
 public:
     ParabolicPostProcessor(const std::string& file_name);
-    void graphics_u(double h, const std::string& name, int plot_steps);
+    void graphics_u(double h, double T, const std::string& name, int plot_steps);
+    std::vector<double> error(std::vector<std::vector<double>>& calc,
+                              std::vector<std::vector<double>>& exact);
 };
 
 inline Parabolic::Parabolic(const EquationData& data, const SolverType& type) : eq_data(data)
@@ -57,16 +59,18 @@ inline Parabolic::Parabolic(const EquationData& data, const SolverType& type) : 
     {
     case Explicit:
         solve_func = [this](int N, int K) { return this->explicit_solve(N, K); };
-        fout.open("explicit.txt");
+        fout.open("result.txt");
+        std::cout << "explicit" << std::endl;
         break;
     case Implicit:
         solve_func = [this](int N, int K) { return this->implicit_solve(N, K); };
-        fout.open("implicit.txt");
-        std::cout << "Открыт файл: " << "implicit.txt" << std::endl;
+        fout.open("result.txt");
+        std::cout << "impicit" << std::endl;
         break;
     case Crank_Nicholson:
         solve_func = [this](int N, int K) { return this->crank_nicolson_solve(N, K); };
-        fout.open("crank-nicolson.txt");
+        fout.open("result.txt");
+        std::cout << "crank-nicholson" << std::endl;
         break;
     case Exact:
         solve_func = [this](int N, int K) { return this->exact(N, K); };
@@ -81,7 +85,7 @@ inline Parabolic::Parabolic(const EquationData& data, const SolverType& type) : 
     }
 }
 
-inline void Parabolic::solve(int N, double sigma, double T, double a)
+inline std::string Parabolic::solve(int N, double sigma, double T, double a)
 {
     _sigma = sigma;
     _a = a;
@@ -89,7 +93,7 @@ inline void Parabolic::solve(int N, double sigma, double T, double a)
     _tau = _sigma * _h * _h / a;
     int K = std::ceil(T / _tau);
     fout << K << ' ' << N + 1 << std::endl;
-    solve_func(N, K);
+    return solve_func(N, K);
 }
 
 inline void print_arr(const std::vector<double>& vec) {
@@ -100,7 +104,7 @@ inline void print_arr(const std::vector<double>& vec) {
 
 }
 
-inline void Parabolic::explicit_solve(int N, int K)
+inline std::string Parabolic::explicit_solve(int N, int K)
 {
     std::vector<double> u_prev(N + 1, 0.0), u_curr(N + 1, 0.0);
 
@@ -117,7 +121,9 @@ inline void Parabolic::explicit_solve(int N, int K)
         if (eq_data.bound_type == First) { // последний слой
             u_curr[N] = u_curr[N-2] + eq_data.phil(k*_tau) * _h;
         } else if (eq_data.bound_type == Second) {
-            u_curr[N] = eq_data.phil(k*_tau);
+            // u_curr[N] = eq_data.phil(k * _tau);
+            u_curr[N] = u_curr[N-1] + _h * eq_data.phil(k * _tau);;
+            // u_curr[N] = (4.0 * u_curr[N-1] - u_curr[N-2] + 2.0 * _h * eq_data.phil(k * _tau)) / 3.0;
         } else if (eq_data.bound_type == Third) {
             u_curr[N] = (eq_data.phil(k*_tau) + u_curr[N-2]/_h + 2*_tau*u_prev[N-1]/_h)
             / (1/_h + 2*_tau/_h);
@@ -125,9 +131,9 @@ inline void Parabolic::explicit_solve(int N, int K)
 
         for (int j = 1; j < N; ++j) {
             u_curr[j] = _sigma * u_prev[j+1]
-            + (1 - 2*_sigma) * u_prev[j]
-            + _sigma * u_prev[j-1]
-            + _tau * eq_data.f(j * _h, (k-1) * _tau);
+                      + (1 - 2*_sigma) * u_prev[j]
+                      + _sigma * u_prev[j-1]
+                      + _tau * eq_data.f(j * _h, (k-1) * _tau);
             // std::cout << "k = " << k << " j= " << j << "_sigma = " << _sigma << " u_prev[j+1] = " << u_prev[j+1] << " u_prev[j] = " << u_prev[j] << " u_prev[j - 1] = " << u_prev[j - 1] << " u_curr[j]= " << u_curr[j] << std::endl;
         }
 
@@ -141,10 +147,11 @@ inline void Parabolic::explicit_solve(int N, int K)
     }
     fout << std::endl;
     fout.close();
+    return "explicit";
 }
 
 
-inline void Parabolic::implicit_solve(int N, int K)
+inline std::string Parabolic::implicit_solve(int N, int K)
 {
     std::vector<double> a(N+1,0), b(N+1,0), c(N+1,0), d(N+1, 0);
     std::vector<double> u_prev(N+1, 0.0), u_curr(N+1, 0.0);
@@ -160,22 +167,26 @@ inline void Parabolic::implicit_solve(int N, int K)
             d[j] = -u_prev[j] - _tau*eq_data.f(j*_h, k*_tau);
         }
 
-        if (eq_data.bound_type == First) {
-            a[0] = 0; b[0] = -(1+2*_sigma); c[0] = _sigma;
-            d[0] = -(u_prev[0] + _sigma*eq_data.phi0(k*_tau));
+        a[0] = 0;
+        b[0] = -(1 + 2 * _sigma);
+        c[0] = _sigma;
+        d[0] = -(u_prev[0] + _sigma * eq_data.phi0(k * _tau)) - _tau * eq_data.f(0, k * _tau);
+        a[N] = _sigma;
+        b[N] = -(1 + _sigma);
+        c[N] = 0;
+        d[N] = -(u_prev[N] + _tau * eq_data.f((N)*_h, k*_tau)
+                    + _sigma * _h * eq_data.phil(k*_tau));
 
-            a[N] = _sigma; b[N] = -(1+2*_sigma); c[N-1] = 0;
-            d[N] = -(u_prev[N] + _sigma*eq_data.phil(k*_tau));
-        } else if (eq_data.bound_type == Second) {
-            a[0] = 0;
-            b[0] = -(1 + 2 * _sigma);
-            c[0] = _sigma;
-            d[0] = -(u_prev[0] + _sigma * eq_data.phi0(k * _tau)) - _tau * eq_data.f(0, k * _tau);
-            a[N] = _sigma;
-            b[N] = -(1 + 2 * _sigma);
-            c[N] = 0;
-            d[N] = -(u_prev[N] + _sigma * eq_data.phil(k * _tau)) - _tau * eq_data.f((N) * _h, k * _tau);
-        }
+        // a[0] = 0;
+        // b[0] = 1.0;   // просто фиксируем u_0 = phi0
+        // c[0] = 0;
+        // d[0] = eq_data.phi0(k * _tau);
+
+        // // Правая граница j=N (Neumann, второй род, 2-й порядок)
+        // a[N] = -1.0;          // коэффициент при u_{N-2}
+        // b[N] = 3.0;           // коэффициент при u_N
+        // c[N] = -4.0;          // коэффициент при u_{N-1}
+        // d[N] = 2.0 * _h * eq_data.phil(k * _tau);
 
         u_curr = tma(a,b,c,d);
         u_prev = u_curr;
@@ -187,11 +198,11 @@ inline void Parabolic::implicit_solve(int N, int K)
     }
     fout << std::endl;
     fout.close();
-    return;
+    return "implicit";
 }
 
 
-inline void Parabolic::crank_nicolson_solve(int N, int K)
+inline std::string Parabolic::crank_nicolson_solve(int N, int K)
 {
     std::vector<double> a(N + 1, 0), b(N + 1, 0), c(N + 1, 0), d(N + 1, 0);
     std::vector<double> u_prev(N + 1, 0.0), u_curr(N + 1, 0.0);
@@ -217,11 +228,18 @@ inline void Parabolic::crank_nicolson_solve(int N, int K)
                   + _tau * eq_data.f(j * _h, t_half);
         }
 
-        a[0] = 0; c[0] = 0; b[0] = 1;
+        // a[0] = 0; c[0] = 0; b[0] = 1;
+        // d[0] = eq_data.phi0(k * _tau);
+        a[0] = 0; b[0] = 1.0; c[0] = 0;
         d[0] = eq_data.phi0(k * _tau);
 
-        a[N] = 0; c[N] = 0; b[N] = 1;
-        d[N] = eq_data.phil(k * _tau);
+        // a[N] = 0; c[N] = 0; b[N] = 1;
+        // // d[N] = eq_data.phil(k * _tau);
+        // d[N] = u_curr[N-1] + _h * eq_data.phil(k * _tau);
+        a[N] = -1.0;     // коэффициент при u_{N-2}
+        b[N] = -3.0;     // коэффициент при u_N
+        c[N] = 4.0;      // коэффициент при u_{N-1}
+        d[N] = 2.0 * _h * eq_data.phil(k * _tau);
 
         u_curr = tma(a, b, c, d);
 
@@ -233,9 +251,10 @@ inline void Parabolic::crank_nicolson_solve(int N, int K)
     }
 
     fout << std::endl;
+    return "crank-nicholson";
 }
 
-inline void Parabolic::exact(int N, int K)
+inline std::string Parabolic::exact(int N, int K)
 {
     for (int k = 0; k < K; ++k) {
         for (int j = 0; j <= N; ++j) {
@@ -247,6 +266,7 @@ inline void Parabolic::exact(int N, int K)
     }
 
     fout << std::flush;
+    return "exact";
 }
 
 inline ParabolicPostProcessor::ParabolicPostProcessor(const std::string& filename) : ifs(filename)
@@ -258,6 +278,7 @@ inline ParabolicPostProcessor::ParabolicPostProcessor(const std::string& filenam
 }
 
 inline void ParabolicPostProcessor::graphics_u(double h,
+                                               double tau,
                                                const std::string& name,
                                                int plot_steps)
 {
@@ -269,25 +290,23 @@ inline void ParabolicPostProcessor::graphics_u(double h,
         for (int j = 0; j < N; ++j)
             ifs >> u[i][j];
 
-    // === читаем точное решение (если есть)
     std::ifstream analytic_ifs("exact.txt");
-    std::vector<std::vector<double>> u_exact;
-    bool has_exact = false;
+    analytic_ifs >> K >> N;
+    std::vector<std::vector<double>> u_exact(K, std::vector<double>(N, 0.0));
+    for (int i = 0; i < K; ++i)
+        for (int j = 0; j < N; ++j)
+            analytic_ifs >> u_exact[i][j];
 
-    if (analytic_ifs) {
-        has_exact = true;
-        int K_e, N_e;
-        analytic_ifs >> K_e >> N_e;
-        u_exact.assign(K_e, std::vector<double>(N_e + 1, 0.0));
-        for (int i = 0; i < K_e; ++i)
-            for (int j = 0; j < N_e; ++j)
-                analytic_ifs >> u_exact[i][j];
+    std::vector<double> err = error(u, u_exact);
+    std::cout << "Max error at each time step:\n";
+    for (int i = 0; i < err.size(); ++i) {
+        std::cout << "t = " << i * tau << ": " << err[i] << std::endl;
     }
 
     std::vector<int> time_indices = {
         std::max(0, int(K * 0.05)),
-        std::max(0, int(K * 0.10)),
-        std::max(0, int(K * 0.25))
+        std::max(0, int(K * 0.5)),
+        std::max(0, int(K * 0.95))
     };
 
     // === создаём временные файлы для Gnuplot
@@ -300,46 +319,72 @@ inline void ParabolicPostProcessor::graphics_u(double h,
     }
     temp.close();
 
-    if (has_exact) {
-        std::ofstream temp_exact("temp_exact.txt");
-        for (int j = 0; j < N; ++j) {
-            temp_exact << j * h;
-            for (int idx : time_indices)
-                temp_exact << " " << u_exact[idx][j];
-            temp_exact << "\n";
-        }
-        temp_exact.close();
-    }
 
-    // === генерируем Gnuplot скрипт
-    std::stringstream gnuplotCmd;
-    gnuplotCmd << "set title '" << name << " over time'\n"
+    std::ofstream temp_exact("temp_exact.txt");
+    for (int j = 0; j < N; ++j) {
+        temp_exact << j * h;
+        for (int idx : time_indices)
+            temp_exact << " " << u_exact[idx][j];
+        temp_exact << "\n";
+    }
+    temp_exact.close();
+
+    std::ofstream temp_error("temp_error.txt");
+    for (int i = 1; i < err.size(); ++i) {
+        temp_error << i * tau << ' ' << err[i] << '\n';
+    }
+    temp_error.close();
+
+        std::stringstream gnuplotCmd;
+    gnuplotCmd << "set terminal pngcairo enhanced size 1600,800\n"
+               << "set output 'solution_and_error.png'\n"
+               << "set multiplot layout 1,2\n"
+
+               // Первый график (решение)
+               << "set title '" << name << " over time'\n"
                << "set xlabel 'x'\n"
                << "set ylabel 'u(x,t)'\n"
                << "set grid\n"
-               << "plot ";
+               << "plot 'temp_data.txt' using 1:2 title 't=0.05T' with lines,\\\n"
+               << "     'temp_data.txt' using 1:3 title 't=0.10T' with lines,\\\n"
+               << "     'temp_data.txt' using 1:4 title 't=0.25T' with lines";
 
-    for (size_t i = 0; i < time_indices.size(); ++i) {
-        gnuplotCmd << "'temp_data.txt' using 1:" << (i + 2)
-                   << " with lines title 'num t=" << time_indices[i] << "'";
-        if (i + 1 != time_indices.size() || has_exact)
-            gnuplotCmd << ", \\\n     ";
-    }
+    gnuplotCmd << ",\\\n     'temp_exact.txt' using 1:2 title 'exact t=0.05T' with points,\\\n"
+                << "     'temp_exact.txt' using 1:3 title 'exact t=0.5T' with points,\\\n"
+                << "     'temp_exact.txt' using 1:4 title 'exact t=0.95T' with points";
 
-    if (has_exact) {
-        for (size_t i = 0; i < time_indices.size(); ++i) {
-            gnuplotCmd << "'temp_exact.txt' using 1:" << (i + 2)
-                       << " with lines dashtype 2 title 'exact t=" << time_indices[i] << "'";
-            if (i + 1 != time_indices.size())
-                gnuplotCmd << ", \\\n     ";
-        }
-    }
-
-    gnuplotCmd << "\npause -1\n";
+    // Второй график (ошибки)
+    gnuplotCmd << "\n\nset title 'Error over time'\n"
+                << "set xlabel 't'\n"
+                << "set ylabel 'max error'\n"
+                << "set grid\n"
+                << "plot 'temp_error.txt' using 1:2 with linespoints pt 7 title 'error'\n"
+                << "unset multiplot\n";
 
     std::ofstream script("gnuplot_script.gp");
     script << gnuplotCmd.str();
     script.close();
 
     system("gnuplot gnuplot_script.gp");
+}
+
+inline std::vector<double> ParabolicPostProcessor::error(std::vector<std::vector<double>>& calc,
+                                                  std::vector<std::vector<double>>& exact)
+{
+
+    std::cout << calc.size() << ' ' << exact.size() << std::endl;
+    std::vector<double> max_errors(calc.size() - 1, 0.0);
+
+    for (size_t i = 1; i < std::min(calc.size(), exact.size()) - 1; ++i) {
+        double max_err = 0.0;
+        for (size_t j = 1; j < std::min(calc[i].size(), calc[i].size()) - 1; ++j) {
+            double err = std::abs(calc[i][j] - exact[i][j]);
+            if (err > max_err) {
+                max_err = err;
+            }
+        }
+        max_errors[i] = max_err;
+    }
+
+    return max_errors;
 }

@@ -12,5 +12,4 @@ int main() {
     std::cout << std::endl;
     mat.checkEquality(res);
     lu.decompose(mat, 1);
-    
 }
