@@ -1,5 +1,7 @@
 #include "equation.h"
 #include <cmath>
+#include <string>
+#include <thread>
 #include "DU_postprocessor/post_processor.h"
 
 const double PI = 3.14159265358979323846;
@@ -27,16 +29,29 @@ int main() {
     data.bound_type = "a1p2";
     data.approximation = "p1";
 
-    Hyperbolic solver(data, SolverType::Implicit);
-    int N = 300;
-    double sigma = 0.1;
-    double T = 5;
-
-    std::string method = solver.solve(N, sigma, T, 1);
-
+    int meth;
+    std::cin >> meth;
+    std::unique_ptr<Hyperbolic> solver = std::make_unique<Hyperbolic>(data,
+        (meth == 1) ? SolverType::Explicit : SolverType::Implicit);
     Hyperbolic ex_solver(data, SolverType::Exact);
-    ex_solver.solve(N, sigma, T, 1);
+
+    int N;
+    double sigma;
+    double T;
+    std::cout << "Enter N, sigma, T: ";
+    std::cin >> N >> sigma >> T;
+    std::string method;
+
+    std::thread solver_thread([&]() {
+        method = solver->solve(N, sigma, T, 1);
+    });
+    std::thread exaxt_thread([&]() {
+        ex_solver.solve(N, sigma, T, 1);
+    })
+    ;
+    solver_thread.join();
+    exaxt_thread.join();
 
     PostProcessor pp_cn("result.txt");
-    pp_cn.graphics_u(data.l / N, solver._tau, "method", 6);
+    pp_cn.graphics_u(data.l / N, solver->_tau, method, 6);
 }

@@ -15,7 +15,6 @@ public:
 
 inline PostProcessor::PostProcessor(const std::string& filename) : ifs(filename)
 {
-    std::cout << filename << std::endl;
     if (!ifs.is_open()) {
         throw std::runtime_error("can't open file");
     }

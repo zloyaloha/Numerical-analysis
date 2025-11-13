@@ -55,7 +55,7 @@ inline Hyperbolic::Hyperbolic(const EquationData& data, const SolverType& type) 
     case Implicit:
         solve_func = [this](int N, int K) { return this->implicit_solve(N, K); };
         fout.open("result.txt");
-        std::cout << "impicit" << std::endl;
+        std::cout << "implicit" << std::endl;
         break;
     case Exact:
         solve_func = [this](int N, int K) { return this->exact(N, K); };
@@ -118,8 +118,6 @@ inline std::string Hyperbolic::explicit_solve(int N, int K)
     }
 
     double tau = _tau;
-    u[1][0] = eq_data.phi0(tau);
-    u[1][N - 1] = eq_data.phil(tau);
 
     for (int k = 2; k < K; ++k) {
         double t = (k - 1) * _tau;
