@@ -56,6 +56,6 @@ int main() {
     Parabolic cn_solver(data, SolverType(type));
     std::string method = cn_solver.solve(N, sigma, a, T);
 
-    ParabolicPostProcessor pp_cn("result.txt");
+    PostProcessor pp_cn("result.txt");
     pp_cn.graphics_u(data.l / N, cn_solver._tau, method, 6);
 }

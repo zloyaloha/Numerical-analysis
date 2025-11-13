@@ -2,8 +2,9 @@
 #include <cmath>
 #include <fstream>
 #include <functional>
-#include <sstream>
 #include <stdexcept>
+#include "DU_postprocessor/post_processor.h"
+
 enum BoundType {
     First,
     Second,
@@ -41,16 +42,6 @@ private:
     std::string implicit_solve(int N, int K);
     std::string crank_nicolson_solve(int N, int K);
     std::string exact(int N, int K);
-};
-
-class ParabolicPostProcessor {
-private:
-    std::ifstream ifs;
-public:
-    ParabolicPostProcessor(const std::string& file_name);
-    void graphics_u(double h, double T, const std::string& name, int plot_steps);
-    std::vector<double> error(std::vector<std::vector<double>>& calc,
-                              std::vector<std::vector<double>>& exact);
 };
 
 inline Parabolic::Parabolic(const EquationData& data, const SolverType& type) : eq_data(data)
@@ -267,124 +258,4 @@ inline std::string Parabolic::exact(int N, int K)
 
     fout << std::flush;
     return "exact";
-}
-
-inline ParabolicPostProcessor::ParabolicPostProcessor(const std::string& filename) : ifs(filename)
-{
-    std::cout << filename << std::endl;
-    if (!ifs.is_open()) {
-        throw std::runtime_error("can't open file");
-    }
-}
-
-inline void ParabolicPostProcessor::graphics_u(double h,
-                                               double tau,
-                                               const std::string& name,
-                                               int plot_steps)
-{
-    int K, N;
-    ifs >> K >> N; // <-- проверь порядок с файлом!
-
-    std::vector<std::vector<double>> u(K, std::vector<double>(N, 0.0));
-    for (int i = 0; i < K; ++i)
-        for (int j = 0; j < N; ++j)
-            ifs >> u[i][j];
-
-    std::ifstream analytic_ifs("exact.txt");
-    analytic_ifs >> K >> N;
-    std::vector<std::vector<double>> u_exact(K, std::vector<double>(N, 0.0));
-    for (int i = 0; i < K; ++i)
-        for (int j = 0; j < N; ++j)
-            analytic_ifs >> u_exact[i][j];
-
-    std::vector<double> err = error(u, u_exact);
-    std::cout << "Max error at each time step:\n";
-    for (int i = 0; i < err.size(); ++i) {
-        std::cout << "t = " << i * tau << ": " << err[i] << std::endl;
-    }
-
-    std::vector<int> time_indices = {
-        std::max(0, int(K * 0.05)),
-        std::max(0, int(K * 0.5)),
-        std::max(0, int(K * 0.95))
-    };
-
-    // === создаём временные файлы для Gnuplot
-    std::ofstream temp("temp_data.txt");
-    for (int j = 0; j < N; ++j) {
-        temp << j * h;
-        for (int idx : time_indices)
-            temp << " " << u[idx][j];
-        temp << "\n";
-    }
-    temp.close();
-
-
-    std::ofstream temp_exact("temp_exact.txt");
-    for (int j = 0; j < N; ++j) {
-        temp_exact << j * h;
-        for (int idx : time_indices)
-            temp_exact << " " << u_exact[idx][j];
-        temp_exact << "\n";
-    }
-    temp_exact.close();
-
-    std::ofstream temp_error("temp_error.txt");
-    for (int i = 1; i < err.size(); ++i) {
-        temp_error << i * tau << ' ' << err[i] << '\n';
-    }
-    temp_error.close();
-
-        std::stringstream gnuplotCmd;
-    gnuplotCmd << "set terminal pngcairo enhanced size 1600,800\n"
-               << "set output 'solution_and_error.png'\n"
-               << "set multiplot layout 1,2\n"
-
-               // Первый график (решение)
-               << "set title '" << name << " over time'\n"
-               << "set xlabel 'x'\n"
-               << "set ylabel 'u(x,t)'\n"
-               << "set grid\n"
-               << "plot 'temp_data.txt' using 1:2 title 't=0.05T' with lines,\\\n"
-               << "     'temp_data.txt' using 1:3 title 't=0.10T' with lines,\\\n"
-               << "     'temp_data.txt' using 1:4 title 't=0.25T' with lines";
-
-    gnuplotCmd << ",\\\n     'temp_exact.txt' using 1:2 title 'exact t=0.05T' with points,\\\n"
-                << "     'temp_exact.txt' using 1:3 title 'exact t=0.5T' with points,\\\n"
-                << "     'temp_exact.txt' using 1:4 title 'exact t=0.95T' with points";
-
-    // Второй график (ошибки)
-    gnuplotCmd << "\n\nset title 'Error over time'\n"
-                << "set xlabel 't'\n"
-                << "set ylabel 'max error'\n"
-                << "set grid\n"
-                << "plot 'temp_error.txt' using 1:2 with linespoints pt 7 title 'error'\n"
-                << "unset multiplot\n";
-
-    std::ofstream script("gnuplot_script.gp");
-    script << gnuplotCmd.str();
-    script.close();
-
-    system("gnuplot gnuplot_script.gp");
-}
-
-inline std::vector<double> ParabolicPostProcessor::error(std::vector<std::vector<double>>& calc,
-                                                  std::vector<std::vector<double>>& exact)
-{
-
-    std::cout << calc.size() << ' ' << exact.size() << std::endl;
-    std::vector<double> max_errors(calc.size() - 1, 0.0);
-
-    for (size_t i = 1; i < std::min(calc.size(), exact.size()) - 1; ++i) {
-        double max_err = 0.0;
-        for (size_t j = 1; j < std::min(calc[i].size(), calc[i].size()) - 1; ++j) {
-            double err = std::abs(calc[i][j] - exact[i][j]);
-            if (err > max_err) {
-                max_err = err;
-            }
-        }
-        max_errors[i] = max_err;
-    }
-
-    return max_errors;
 }

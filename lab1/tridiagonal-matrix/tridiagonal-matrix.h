@@ -65,6 +65,8 @@ inline std::vector<double> tma(const std::vector<double>& a,
         beta[i] = (d[i] - a[i] * beta[i - 1]) / denom;
     }
 
+    alpha[n - 1] = 0.0;
+
     x[n - 1] = beta[n - 1];
     for (int i = n - 2; i >= 0; --i) {
         x[i] = alpha[i] * x[i + 1] + beta[i];
