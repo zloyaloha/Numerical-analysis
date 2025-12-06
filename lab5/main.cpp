@@ -1,5 +1,6 @@
-#include "equation.h"
 #include <cmath>
+
+#include "equation.h"
 
 int main() {
     EquationData data;

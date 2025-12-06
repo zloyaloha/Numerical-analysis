@@ -1,8 +1,9 @@
+#include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <iterator>
 #include <vector>
-#include <cmath>
-#include <algorithm>
+
 #include "derivative.h"
 
 int main() {
@@ -14,6 +15,6 @@ int main() {
 
     double first = der.findFirstDerivative(x, y, 0.1);
     double second = der.findSecondDerivative(x, y, 0.2);
-   std::cout << "Первая производная со вторым порядком точности " << first << '\n';
-   std::cout << "Вторая производная " << second << '\n';
+    std::cout << "Первая производная со вторым порядком точности " << first << '\n';
+    std::cout << "Вторая производная " << second << '\n';
 }

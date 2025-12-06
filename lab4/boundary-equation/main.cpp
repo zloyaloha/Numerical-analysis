@@ -1,15 +1,10 @@
-#include "solver.h"
 #include <cstdlib>
 
-double f(const double& x, const double& y, const double& dy)
-{
-    return std::tan(x) * dy - 2 * y;
-}
+#include "solver.h"
 
-double exact(const double& x)
-{
-    return std::sin(x) + 2 - std::sin(x) * std::log((1 + std::sin(x)) / (1 - std::sin(x)));
-}
+double f(const double& x, const double& y, const double& dy) { return std::tan(x) * dy - 2 * y; }
+
+double exact(const double& x) { return std::sin(x) + 2 - std::sin(x) * std::log((1 + std::sin(x)) / (1 - std::sin(x))); }
 
 int main() {
     const double a = 0;
@@ -33,5 +28,4 @@ int main() {
 
     finite_difference_solver.error(res_finite_difference, res_finite_difference_h2, exact, 2);
     finite_difference_solver.grafics(res_finite_difference, exact);
-
 }

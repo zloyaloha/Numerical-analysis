@@ -1,15 +1,12 @@
-#include <functional>
 #include <fstream>
-#include "tridiagonal-matrix.h"
+#include <functional>
 #include <iostream>
 #include <string>
 #include <vector>
 
-enum SolverType {
-    Explicit,
-    Implicit,
-    Exact
-};
+#include "tridiagonal-matrix.h"
+
+enum SolverType { Explicit, Implicit, Exact };
 
 struct EquationData {
     std::function<double(double, double)> f;
@@ -29,46 +26,43 @@ struct EquationData {
 class Hyperbolic {
 public:
     EquationData eq_data;
-    std::function<std::string(int,int)> solve_func;
-    std::function<double(std::vector<std::vector<double>>&, double K, double T)> left_bound;
-    std::function<double(std::vector<std::vector<double>>&, double K, double T)> right_bound;
-    double _h, _tau, _sigma, _a, _omega;
+    std::function<std::string(int, int)> solve_func;
+    double _h, _tau, _sigma, _omega;
     std::ofstream fout;
+
 public:
     Hyperbolic(const EquationData& data, const SolverType& solver);
-    std::string solve(int N, double sigma, double T, double a);
+    std::string solve(int N, double sigma, double T);
+
 private:
     std::string explicit_solve(int N, int K);
     std::string implicit_solve(int N, int K);
     std::string exact(int N, int K);
 };
 
-inline Hyperbolic::Hyperbolic(const EquationData& data, const SolverType& type) : eq_data(data)
-{
-    switch (type)
-    {
-    case Explicit:
-        solve_func = [this](int N, int K) { return this->explicit_solve(N, K); };
-        fout.open("result.txt");
-        std::cout << "explicit" << std::endl;
-        break;
-    case Implicit:
-        solve_func = [this](int N, int K) { return this->implicit_solve(N, K); };
-        fout.open("result.txt");
-        std::cout << "implicit" << std::endl;
-        break;
-    case Exact:
-        solve_func = [this](int N, int K) { return this->exact(N, K); };
-        fout.open("exact.txt");
-        break;
-    default:
-        break;
+inline Hyperbolic::Hyperbolic(const EquationData& data, const SolverType& type) : eq_data(data) {
+    switch (type) {
+        case Explicit:
+            solve_func = [this](int N, int K) { return this->explicit_solve(N, K); };
+            fout.open("result.txt");
+            std::cout << "explicit" << std::endl;
+            break;
+        case Implicit:
+            solve_func = [this](int N, int K) { return this->implicit_solve(N, K); };
+            fout.open("result.txt");
+            std::cout << "implicit" << std::endl;
+            break;
+        case Exact:
+            solve_func = [this](int N, int K) { return this->exact(N, K); };
+            fout.open("exact.txt");
+            break;
+        default:
+            break;
     }
 }
 
-inline std::string Hyperbolic::exact(int N, int K)
-{
-     for (int k = 0; k < K; ++k) {
+inline std::string Hyperbolic::exact(int N, int K) {
+    for (int k = 0; k < K; ++k) {
         for (int j = 0; j < N; ++j) {
             double x = j * _h;
             double t = k * _tau;
@@ -81,23 +75,20 @@ inline std::string Hyperbolic::exact(int N, int K)
     return "exact";
 }
 
-inline std::string Hyperbolic::solve(int N, double sigma, double T, double a)
-{
+inline std::string Hyperbolic::solve(int N, double sigma, double T) {
     _sigma = sigma;
 
     _h = eq_data.l / N;
 
-    _tau = std::sqrt(_sigma) * _h / std::sqrt(a);
+    _tau = std::sqrt(_sigma) * _h;
     _omega = _tau * _tau * eq_data.b / (2.0 * _h);
-
 
     int K = std::ceil(T / _tau);
     fout << K << ' ' << N << '\n';
     return solve_func(N, K);
 }
 
-inline std::string Hyperbolic::explicit_solve(int N, int K)
-{
+inline std::string Hyperbolic::explicit_solve(int N, int K) {
     std::vector<std::vector<double>> u(K, std::vector<double>(N));
 
     for (int j = 0; j < N; ++j) {
@@ -106,14 +97,11 @@ inline std::string Hyperbolic::explicit_solve(int N, int K)
 
         double O = _tau * _tau / 2;
         if (eq_data.approximation == "p1") {
-            u[1][j] = eq_data.psi1(x) + _tau * eq_data.psi2(x) + eq_data.psi1_dir2(x) * O;
+            u[1][j] = eq_data.psi1(x) + _tau * eq_data.psi2(x);
         } else if (eq_data.approximation == "p2") {
-            u[1][j] = eq_data.psi1(x) + _tau * eq_data.psi2(x) +
-                eq_data.a * O * eq_data.psi1_dir2(x) +
-                eq_data.b * O * eq_data.psi1_dir1(x) +
-                eq_data.c * O * eq_data.psi1(x) +
-                eq_data.d * O * eq_data.psi2(x) +
-                O * eq_data.f(x, 0);
+            u[1][j] = eq_data.psi1(x) + _tau * eq_data.psi2(x) + eq_data.a * O * eq_data.psi1_dir2(x) +
+                      eq_data.b * O * eq_data.psi1_dir1(x) + eq_data.c * O * eq_data.psi1(x) + eq_data.d * O * eq_data.psi2(x) +
+                      O * eq_data.f(x, 0);
         }
     }
 
@@ -131,16 +119,13 @@ inline std::string Hyperbolic::explicit_solve(int N, int K)
         for (int j = 1; j < N - 1; ++j) {
             double x = j * _h;
 
-            double numerator =
-                (2.0 + eq_data.c * tau_sq - 2.0 * sigma_a_coeff) * u[k - 1][j] +
-                -(1.0 - d_tau_half) * u[k - 2][j] +
-                sigma_a_coeff * (u[k - 1][j + 1] + u[k - 1][j - 1]) +
-                sigma_b_coeff * (u[k - 1][j + 1] - u[k - 1][j - 1]) +
-                tau_sq * eq_data.f(x, t);
-                u[k][j] = numerator / (1.0 + d_tau_half);
+            double numerator = (2.0 + eq_data.c * tau_sq - 2.0 * sigma_a_coeff) * u[k - 1][j] +
+                               -(1.0 - d_tau_half) * u[k - 2][j] + sigma_a_coeff * (u[k - 1][j + 1] + u[k - 1][j - 1]) +
+                               sigma_b_coeff * (u[k - 1][j + 1] - u[k - 1][j - 1]) + tau_sq * eq_data.f(x, t);
+            u[k][j] = numerator / (1.0 + d_tau_half);
         }
-        u[k][0] = eq_data.phi0((k) * _tau);
-        u[k][N - 1] = eq_data.phil((k) * _tau);
+        u[k][0] = eq_data.phi0(k * _tau);
+        u[k][N - 1] = eq_data.phil(k * _tau);
     }
 
     for (int k = 0; k < K; ++k) {
@@ -155,8 +140,7 @@ inline std::string Hyperbolic::explicit_solve(int N, int K)
     return "explicit";
 }
 
-inline std::string Hyperbolic::implicit_solve(int N, int K)
-{
+inline std::string Hyperbolic::implicit_solve(int N, int K) {
     std::vector<std::vector<double>> u(K, std::vector<double>(N, 0));
 
     for (int j = 0; j < N; ++j) {
@@ -165,19 +149,13 @@ inline std::string Hyperbolic::implicit_solve(int N, int K)
 
         double O = _tau * _tau / 2;
         if (eq_data.approximation == "p1") {
-            u[1][j] = eq_data.psi1(x) + _tau * eq_data.psi2(x) + eq_data.psi1_dir2(x) * O; // разложение по Тейлору
-        } else if (eq_data.approximation == "p2") { // разложение по Тейлору с учётом уравнения
-            u[1][j] = eq_data.psi1(x) + _tau * eq_data.psi2(x) +
-                eq_data.a * O * eq_data.psi1_dir2(x) +
-                eq_data.b * O * eq_data.psi1_dir1(x) +
-                eq_data.c * O * eq_data.psi1(x) +
-                eq_data.d * O * eq_data.psi2(x) +
-                O * eq_data.f(x, 0);
+            u[1][j] = eq_data.psi1(x) + _tau * eq_data.psi2(x);
+        } else if (eq_data.approximation == "p2") {
+            u[1][j] = eq_data.psi1(x) + _tau * eq_data.psi2(x) + eq_data.a * O * eq_data.psi1_dir2(x) +
+                      eq_data.b * O * eq_data.psi1_dir1(x) + eq_data.c * O * eq_data.psi1(x) + eq_data.d * O * eq_data.psi2(x) +
+                      O * eq_data.f(x, 0);
         }
     }
-
-    u[1][0] = eq_data.phi0(_tau);
-    u[1][N - 1] = eq_data.phil(_tau);
 
     std::vector<double> a(N, 0);
     std::vector<double> b(N, 0);
@@ -195,11 +173,8 @@ inline std::string Hyperbolic::implicit_solve(int N, int K)
             a[j] = -_sigma;
             b[j] = (1.0 + damp_term + 2.0 * _sigma);
             c[j] = -_sigma;
-            d[j] =
-                (2.0 + reac_term) * u[k - 1][j] -
-                (1.0 - damp_term) * u[k - 2][j] +
-                conv_term * (u[k-1][j+1] - u[k-1][j-1]) +
-                _tau * _tau * eq_data.f(x, (k-1)*_tau);
+            d[j] = (2.0 + reac_term) * u[k - 1][j] - (1.0 - damp_term) * u[k - 2][j] +
+                   conv_term * (u[k - 1][j + 1] - u[k - 1][j - 1]) + _tau * _tau * eq_data.f(x, (k - 1) * _tau);
         }
 
         a[0] = 0.0;

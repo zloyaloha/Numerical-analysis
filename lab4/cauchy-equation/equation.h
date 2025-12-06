@@ -1,11 +1,11 @@
-#include <vector>
-#include <functional>
-#include <fstream>
-#include <iostream>
-#include <cmath>
-#include <iomanip>
 #include <algorithm>
+#include <cmath>
+#include <fstream>
+#include <functional>
+#include <iomanip>
+#include <iostream>
 #include <sstream>
+#include <vector>
 
 struct Point {
     double x, y1, y2;
@@ -14,8 +14,10 @@ struct Point {
 class Solver {
 public:
     virtual std::vector<Point> solve(std::function<double(const double&, const double&, const double&)> f, const double& h) = 0;
-    void error(const std::vector<Point>& pt, const std::vector<Point>& pt_h2, std::function<double(const double&)> f, double coef);
+    void error(const std::vector<Point>& pt, const std::vector<Point>& pt_h2, std::function<double(const double&)> f,
+               double coef);
     void grafics(const std::vector<Point>& pt, std::function<double(const double&)> f);
+
 protected:
     std::string name;
     double p;
@@ -24,6 +26,7 @@ protected:
 class CauchySolver : public Solver {
 public:
     CauchySolver(double x0_, double y0_, double dy0_, double x_end_) : x0(x0_), y0(y0_), dy0(dy0_), x_end(x_end_) {}
+
 protected:
     double x0, y0, dy0;
     double x_end;
@@ -31,30 +34,41 @@ protected:
 
 class EulerSolver : public CauchySolver {
 public:
-    EulerSolver(double x0_, double y0_, double dy0_, double x_end_) : CauchySolver(x0_, y0_, dy0_, x_end_) {p = 1; name = "Euler";}
+    EulerSolver(double x0_, double y0_, double dy0_, double x_end_) : CauchySolver(x0_, y0_, dy0_, x_end_) {
+        p = 1;
+        name = "Euler";
+    }
     std::vector<Point> solve(std::function<double(const double&, const double&, const double&)> f, const double& h) override;
 };
 
 class EulerCauchySolver : public CauchySolver {
 public:
-    EulerCauchySolver(double x0_, double y0_, double dy0_, double x_end_) : CauchySolver(x0_, y0_, dy0_, x_end_) {p = 2; name = "Euler-Cauchy";}
+    EulerCauchySolver(double x0_, double y0_, double dy0_, double x_end_) : CauchySolver(x0_, y0_, dy0_, x_end_) {
+        p = 2;
+        name = "Euler-Cauchy";
+    }
     std::vector<Point> solve(std::function<double(const double&, const double&, const double&)> f, const double& h);
 };
 
 class RungeKuttaSolver : public CauchySolver {
 public:
-    RungeKuttaSolver(double x0_, double y0_, double dy0_, double x_end_) : CauchySolver(x0_, y0_, dy0_, x_end_) {p = 4; name = "Runge-Kutta";}
+    RungeKuttaSolver(double x0_, double y0_, double dy0_, double x_end_) : CauchySolver(x0_, y0_, dy0_, x_end_) {
+        p = 4;
+        name = "Runge-Kutta";
+    }
     std::vector<Point> solve(std::function<double(const double&, const double&, const double&)> f, const double& h);
 };
 
 class AdamsSolver : public CauchySolver {
 public:
-    AdamsSolver(double x0_, double y0_, double dy0_, double x_end_) : CauchySolver(x0_, y0_, dy0_, x_end_) {p = 4; name = "Adams";}
+    AdamsSolver(double x0_, double y0_, double dy0_, double x_end_) : CauchySolver(x0_, y0_, dy0_, x_end_) {
+        p = 4;
+        name = "Adams";
+    }
     std::vector<Point> solve(std::function<double(const double&, const double&, const double&)> f, const double& h);
 };
 
-std::vector<Point> EulerSolver::solve(std::function<double(const double&, const double&, const double&)> f, const double& h)
-{
+std::vector<Point> EulerSolver::solve(std::function<double(const double&, const double&, const double&)> f, const double& h) {
     std::vector<Point> results;
     double x = x0;
     double y1 = y0;
@@ -74,8 +88,8 @@ std::vector<Point> EulerSolver::solve(std::function<double(const double&, const 
     return results;
 }
 
-std::vector<Point> EulerCauchySolver::solve(std::function<double(const double&, const double&, const double&)> f, const double& h)
-{
+std::vector<Point> EulerCauchySolver::solve(std::function<double(const double&, const double&, const double&)> f,
+                                            const double& h) {
     std::vector<Point> res;
     double x = x0;
     double y1 = y0;
@@ -99,8 +113,8 @@ std::vector<Point> EulerCauchySolver::solve(std::function<double(const double&, 
     return res;
 }
 
-std::vector<Point> RungeKuttaSolver::solve(std::function<double(const double&, const double&, const double&)> f, const double& h)
-{
+std::vector<Point> RungeKuttaSolver::solve(std::function<double(const double&, const double&, const double&)> f,
+                                           const double& h) {
     std::vector<Point> res;
     double x = x0;
     double y1 = y0;
@@ -128,11 +142,9 @@ std::vector<Point> RungeKuttaSolver::solve(std::function<double(const double&, c
     return res;
 }
 
-std::vector<Point> AdamsSolver::solve(std::function<double(const double&, const double&, const double&)> f, const double& h)
-{
+std::vector<Point> AdamsSolver::solve(std::function<double(const double&, const double&, const double&)> f, const double& h) {
     RungeKuttaSolver solver(x0, y0, dy0, x0 + h * 4);
     std::vector<Point> states = solver.solve(f, h);
-
 
     std::vector<Point> results(states);
 
@@ -164,9 +176,7 @@ std::vector<Point> AdamsSolver::solve(std::function<double(const double&, const 
     return results;
 }
 
-void Solver::grafics(const std::vector<Point>& results, std::function<double(const double&)> exact)
-{
-
+void Solver::grafics(const std::vector<Point>& results, std::function<double(const double&)> exact) {
     std::ofstream temp("temp_data.txt");
     for (const auto& pt : results) {
         temp << pt.x << " " << pt.y1 << " " << exact(pt.x) << " " << pt.y2 << "\n";
@@ -174,7 +184,7 @@ void Solver::grafics(const std::vector<Point>& results, std::function<double(con
     temp.close();
 
     std::stringstream gnuplotCmd;
-     gnuplotCmd << "set title '" << name << " vs Exact Solution'\n"
+    gnuplotCmd << "set title '" << name << " vs Exact Solution'\n"
                << "set xlabel 'x'\n"
                << "set ylabel 'y'\n"
                << "set grid\n"
@@ -189,8 +199,8 @@ void Solver::grafics(const std::vector<Point>& results, std::function<double(con
     system("gnuplot gnuplot_script.gp");
 }
 
-void Solver::error(const std::vector<Point>& results, const std::vector<Point>& results_h2, std::function<double(const double&)> exact, double coef)
-{
+void Solver::error(const std::vector<Point>& results, const std::vector<Point>& results_h2,
+                   std::function<double(const double&)> exact, double coef) {
     std::cout << '\n' << name << " table" << '\n';
     std::cout << std::fixed << std::setprecision(12);
     std::cout << "x\tY(h)\tY(h/2)\tRungeErr\tExact\tAbsErr" << std::endl;
@@ -198,9 +208,7 @@ void Solver::error(const std::vector<Point>& results, const std::vector<Point>& 
         double x = results[i].x;
         double yh = results[i].y1;
 
-        auto it = std::find_if(results_h2.begin(), results_h2.end(), [&](const Point& p) {
-            return std::abs(p.x - x) < 1e-10;
-        });
+        auto it = std::find_if(results_h2.begin(), results_h2.end(), [&](const Point& p) { return std::abs(p.x - x) < 1e-10; });
 
         if (it == results_h2.end()) continue;
 

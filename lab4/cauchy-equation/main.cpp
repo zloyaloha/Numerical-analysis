@@ -1,15 +1,10 @@
-#include "equation.h"
 #include <cmath>
 
-double exact(const double& x)
-{
-    return std::pow(x, 2) + x + 1;
-}
+#include "equation.h"
 
-double f(const double& x, const double& y1, const double& y2)
-{
-    return (2 * x * y2 - 2 * y1) / (std::pow(x, 2) - 1);
-}
+double exact(const double& x) { return std::pow(x, 2) + x + 1; }
+
+double f(const double& x, const double& y1, const double& y2) { return (2 * x * y2 - 2 * y1) / (std::pow(x, 2) - 1); }
 
 int main() {
     EulerSolver solver_euler(2.0, 7.0, 5.0, 3.0);

@@ -1,13 +1,12 @@
-#include <iostream>
-#include <vector>
-#include <functional>
 #include <algorithm>
 #include <cmath>
+#include <functional>
+#include <iostream>
+#include <vector>
 
 class Derivative {
 public:
-    double findFirstDerivative(const std::vector<double>& x, const std::vector<double>& y, double x_star)
-    {
+    double findFirstDerivative(const std::vector<double>& x, const std::vector<double>& y, double x_star) {
         int idx = -1;
         for (int i = 0; i < x.size() - 1; ++i) {
             if (x[i] < x_star && x_star <= x[i + 1]) {
@@ -48,8 +47,7 @@ public:
         }
     }
 
-    double findSecondDerivative(const std::vector<double>& x, const std::vector<double>& y, double x_star)
-    {
+    double findSecondDerivative(const std::vector<double>& x, const std::vector<double>& y, double x_star) {
         int idx = -1;
         for (int i = 0; i < x.size() - 1; ++i) {
             if (x[i] <= x_star && x_star <= x[i + 1]) {
