@@ -18,12 +18,12 @@ int main() {
     data.phi2 = [](double x, double t) { return 0.0; };              // y=0
     data.phi3 = [](double x, double t) { return x * std::cos(t); };  // y=1
 
-    int N = 40;
+    int N = 10;
     double T_end = 2 * M_PI;
 
     try {
         Parabolic2D solver_exp(data, SolverType::FractSteps, 15);
-        solver_exp.solve(N, N, 0.25, T_end);
+        solver_exp.solve(N, N, 0.5, T_end);
     } catch (const std::exception& e) {
         std::cerr << "Explicit Solver Error: " << e.what() << std::endl;
     }

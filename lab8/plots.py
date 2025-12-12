@@ -9,58 +9,68 @@ import os
 plt.style.use('seaborn-v0_8-darkgrid')
 
 def parse_snapshot_file(filename):
-    snapshots = []
-    current_data = []
-    times = []
-
     if not os.path.exists(filename):
+        print(f"File not found: {filename}")
         return None, None, None, None
 
     print(f"Reading {filename}...")
+    snapshots_X = []
+    snapshots_Y = []
+    snapshots_Z = []
+    times = []
+
+    current_data = []
     with open(filename, 'r') as f:
         lines = f.readlines()
 
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-
-        if line.startswith("TIME"):
-            if current_data:
-                snapshots.append(np.array(current_data))
-                current_data = []
-            parts = line.split()
-            if len(parts) > 1:
-                times.append(float(parts[1]))
-        else:
-            vals = list(map(float, line.split()))
-            if len(vals) == 3:
-                current_data.append(vals)
-
-    if current_data:
-        snapshots.append(np.array(current_data))
-
-    X_list, Y_list, Z_list = [], [], []
-
-    for snap in snapshots:
-        x_raw = snap[:, 0]
-        y_raw = snap[:, 1]
-        z_raw = snap[:, 2]
+    def process_block(data_block):
+        if not data_block: return
+        arr = np.array(data_block)
+        x_raw = arr[:, 0]
+        y_raw = arr[:, 1]
+        z_raw = arr[:, 2]
 
         unique_x = np.unique(x_raw)
         unique_y = np.unique(y_raw)
         Nx = len(unique_x)
         Ny = len(unique_y)
 
-        X = x_raw.reshape((Nx, Ny))
-        Y = y_raw.reshape((Nx, Ny))
-        Z = z_raw.reshape((Nx, Ny))
+        if len(x_raw) != Nx * Ny:
+            print(f"Warning: Data block size {len(x_raw)} does not match grid {Nx}x{Ny}. Skipping frame.")
+            return
 
-        X_list.append(X)
-        Y_list.append(Y)
-        Z_list.append(Z)
+        order = np.lexsort((y_raw, x_raw))
+        X = x_raw[order].reshape((Nx, Ny))
+        Y = y_raw[order].reshape((Nx, Ny))
+        Z = z_raw[order].reshape((Nx, Ny))
 
-    return X_list, Y_list, Z_list, times
+        snapshots_X.append(X)
+        snapshots_Y.append(Y)
+        snapshots_Z.append(Z)
+
+    for line in lines:
+        line = line.strip()
+        if not line: continue
+
+        if line.startswith("TIME"):
+            if current_data:
+                process_block(current_data)
+                current_data = []
+            parts = line.split()
+            if len(parts) > 1:
+                times.append(float(parts[1]))
+        else:
+            try:
+                vals = list(map(float, line.split()))
+                if len(vals) == 3:
+                    current_data.append(vals)
+            except ValueError:
+                continue
+
+    if current_data:
+        process_block(current_data)
+
+    return snapshots_X, snapshots_Y, snapshots_Z, times
 
 def parse_exact_file(filename):
     if not os.path.exists(filename): return None
@@ -68,47 +78,55 @@ def parse_exact_file(filename):
     return np.loadtxt(filename)
 
 def parse_error_file(filename):
-    if not os.path.exists(filename): return None
-    print(f"Reading {filename}...")
-    max_errors = []
+    if not os.path.exists(filename): return []
+    print(f"Reading errors from {filename}...")
     with open(filename, 'r') as f:
-        line = f.readline()
-        errors = list(map(float, line.split()))
+        # Читаем все числа из файла, игнорируя переводы строк
+        content = f.read()
+        errors = list(map(float, content.split()))
     return errors
 
 def save_animation(X_list, Y_list, Z_list, times, errors, title, filename_out):
-    if not Z_list: return
+    if not Z_list:
+        print("No data to animate.")
+        return
 
-    print(f"Generating animation: {filename_out} (please wait)...")
-    fig = plt.figure(figsize=(20, 10))
+    print(f"Generating animation: {filename_out}...")
+    fig = plt.figure(figsize=(16, 8))
     ax1 = fig.add_subplot(121, projection='3d')
     ax2 = fig.add_subplot(122)
-    ax2.plot(errors, label='Max Error', color='red', linewidth=2)
-    ax2.set_xlabel('Time Step')
-    ax2.set_ylabel('Max Absolute Error')
-    ax2.set_title(f'Error Dynamics: {title}')
-    ax2.set_yscale('log')
-    ax2.legend()
-    ax2.grid(True, which="both", ls="--", alpha=0.7)
+    if errors and len(errors) > 0:
+        ax2.plot(errors, label='Max Error', color='red')
+        ax2.set_yscale('log')
+        ax2.set_xlabel('Time Step')
+        ax2.set_ylabel('Error')
+        ax2.set_title('Error Dynamics')
+        ax2.legend()
+        ax2.grid(True)
 
-    z_min = min(np.min(z) for z in Z_list)
-    z_max = max(np.max(z) for z in Z_list)
+    all_z = np.concatenate([z.flatten() for z in Z_list])
+    z_min_global = np.min(all_z)
+    z_max_global = np.max(all_z)
+    if z_max_global > 1e5 or z_min_global < -1e5:
+        print("Warning: Detected huge values (instability?). Clamping plot limits.")
+        z_max_global = 2.0
+        z_min_global = -0.5
 
     def update(frame):
         ax1.clear()
-        ax1.set_title(f"{title}\nTime: {times[frame]:.4f}")
+        ax1.set_title(f"{title}\nt = {times[frame]:.3f}")
         ax1.set_xlabel("X")
         ax1.set_ylabel("Y")
         ax1.set_zlabel("U")
-        ax1.set_zlim(z_min, z_max)
+        ax1.set_zlim(z_min_global, z_max_global)
         surf = ax1.plot_surface(X_list[frame], Y_list[frame], Z_list[frame],
-                               cmap='viridis', edgecolor='none')
-        return surf
+                               cmap='viridis', edgecolor='none', rstride=1, cstride=1)
+        return surf,
 
-    ani = FuncAnimation(fig, update, frames=len(Z_list), interval=200)
-    ani.save(filename_out, writer='pillow', fps=5)
+    ani = FuncAnimation(fig, update, frames=len(Z_list), interval=100, blit=False)
+    ani.save(filename_out, writer='pillow', fps=10)
     plt.close(fig)
-    print(f"Done! Saved to {filename_out}")
+    print(f"Saved {filename_out}")
 
 def save_error_plot(errors, method_name, filename_out):
     if not errors: return

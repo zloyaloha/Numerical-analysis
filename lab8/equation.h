@@ -104,7 +104,9 @@ inline std::string Parabolic2D::exact(int N1, int N2, int K, double T) {
 
 inline std::string Parabolic2D::fract_steps(int N1, int N2, int K, double T) {
     std::vector<std::vector<double>> u_curr(N1 + 1, std::vector<double>(N2 + 1));
+    std::vector<std::vector<double>> u_half(N1 + 1, std::vector<double>(N2 + 1));
     std::vector<std::vector<double>> u_next(N1 + 1, std::vector<double>(N2 + 1));
+
     std::ofstream error_file("fract_steps_error.txt");
 
     for (int i = 0; i <= N1; ++i) {
@@ -117,39 +119,88 @@ inline std::string Parabolic2D::fract_steps(int N1, int N2, int K, double T) {
     double r_x = _tau / (_h1 * _h1);
     double r_y = _tau / (_h2 * _h2);
 
-    if (r_x + r_y > 0.5) {
-        std::cerr << "Warning: Explicit scheme might be unstable! (rx+ry = " << r_x + r_y << " > 0.5)" << std::endl;
-    }
-
-    for (int k = 1; k < K; ++k) {
+    for (int k = 0; k < K; ++k) {
         double t_curr = k * _tau;
         double t_next = (k + 1) * _tau;
+        double t_half = t_curr + 0.5 * _tau;
 
-        for (int i = 1; i < N1; ++i) {
-            for (int j = 1; j < N2; ++j) {
+        for (int j = 1; j < N2; ++j) {
+            std::vector<double> a(N1 + 1, 0.0), c(N1 + 1, 0.0), b(N1 + 1, 0.0), f_rhs(N1 + 1, 0.0);
+            std::vector<double> x_res(N1 + 1);
+
+            double y = j * _h2;
+
+            c[0] = 1.0;
+            b[0] = 0.0;
+            f_rhs[0] = eq_data.phi0(y, t_half);
+
+            for (int i = 1; i < N1; ++i) {
                 double x = i * _h1;
-                double y = j * _h2;
+                a[i] = -r_x;
+                b[i] = -r_x;
+                c[i] = 1.0 + 2.0 * r_x;
 
-                double d2x = (u_curr[i + 1][j] - 2 * u_curr[i][j] + u_curr[i - 1][j]) / (_h1 * _h1);
-                double d2y = (u_curr[i][j + 1] - 2 * u_curr[i][j] + u_curr[i][j - 1]) / (_h2 * _h2);
-
-                u_next[i][j] = u_curr[i][j] + _tau * (d2x + d2y + eq_data.f(x, y, t_curr));
+                f_rhs[i] = u_curr[i][j] + (_tau / 2.0) * eq_data.f(x, y, t_curr);
             }
+            a[N1] = 0.0;
+            c[N1] = 1.0;
+            f_rhs[N1] = eq_data.phi1(y, t_half);
+
+            x_res = tma(a, c, b, f_rhs);
+
+            for (int i = 0; i <= N1; ++i) u_half[i][j] = x_res[i];
         }
 
-        for (int j = 0; j <= N2; ++j) u_next[0][j] = eq_data.phi0(j * _h2, t_next);
-        for (int j = 0; j <= N2; ++j) u_next[N1][j] = eq_data.phi1(j * _h2, t_next);
-        for (int i = 0; i <= N1; ++i) u_next[i][0] = eq_data.phi2(i * _h1, t_next);
-        for (int i = 0; i <= N1; ++i) u_next[i][N2] = eq_data.phi3(i * _h1, t_next);
+        for (int i = 0; i <= N1; ++i) {
+            u_half[i][0] = eq_data.phi2(i * _h1, t_half);
+            u_half[i][N2] = eq_data.phi3(i * _h1, t_half);
+        }
+
+        for (int i = 1; i < N1; ++i) {
+            std::vector<double> a(N2 + 1, 0.0), c(N2 + 1, 0.0), b(N2 + 1, 0.0), f_rhs(N2 + 1, 0.0);
+            std::vector<double> y_res(N2 + 1);
+
+            double x = i * _h1;
+
+            c[0] = 1.0;
+            b[0] = 0.0;
+            f_rhs[0] = eq_data.phi2(x, t_next);
+
+            for (int j = 1; j < N2; ++j) {
+                double y = j * _h2;
+                a[j] = -r_y;
+                b[j] = -r_y;
+                c[j] = 1.0 + 2.0 * r_y;
+
+                f_rhs[j] = u_half[i][j] + (_tau / 2.0) * eq_data.f(x, y, t_curr);
+            }
+            a[N2] = 0.0;
+            c[N2] = 1.0;
+            f_rhs[N2] = eq_data.phi3(x, t_next);
+
+            y_res = tma(a, c, b, f_rhs);
+
+            for (int j = 0; j <= N2; ++j) u_next[i][j] = y_res[j];
+        }
+
+        for (int j = 0; j <= N2; ++j) {
+            u_next[0][j] = eq_data.phi0(j * _h2, t_next);
+            u_next[N1][j] = eq_data.phi1(j * _h2, t_next);
+        }
+        for (int i = 0; i <= N1; ++i) {
+            u_next[i][0] = eq_data.phi2(i * _h1, t_next);
+            u_next[i][N2] = eq_data.phi3(i * _h1, t_next);
+        }
 
         u_curr = u_next;
-        error_file << calc_max_error(u_curr, t_next) << ' ';
 
+        error_file << calc_max_error(u_curr, t_next) << ' ';
         if ((k + 1) % _save_step == 0 || (k + 1) == K) {
             save_snapshot(u_curr, t_next);
         }
     }
-    return "Explicit solution";
+
+    return "Splitting method solution";
 }
 
 inline std::string Parabolic2D::alter_direction(int N1, int N2, int K, double T) {
