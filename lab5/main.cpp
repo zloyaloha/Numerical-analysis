@@ -24,7 +24,11 @@ int main() {
     // data.l = 1.0;
     // data.exact_solution = [data, a](double x, double t) { return x + std::exp(-a * M_PI * M_PI * t) * std::sin(M_PI * x); };
 
-    data.bound_type = Second;
+    std::cout << "Enter bound type and solver type (1, 2, 3) and (1, 2, 3, 4): ";
+    int bound_type;
+    std::cin >> bound_type;
+
+    data.bound_type = BoundType(bound_type);
     data.phi0 = [](double t) { return std::sin(t); };
     data.phil = [](double t) { return -std::sin(t); };
     data.psi = [](double x) { return 0; };
@@ -34,7 +38,7 @@ int main() {
 
     int N = 50;
     double sigma = 0.1;
-    double T = 15;
+    double T = 1;
 
     Parabolic exact_solver(data, SolverType::Exact);
     exact_solver.solve(N, sigma, a, T);

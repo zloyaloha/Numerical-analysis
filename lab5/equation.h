@@ -6,7 +6,7 @@
 #include "DU_postprocessor/post_processor.h"
 #include "tridiagonal-matrix.h"
 
-enum BoundType { First, Second, Third };
+enum BoundType { First = 1, Second, Third };
 
 enum SolverType { Explicit = 1, Implicit, Crank_Nicholson, Exact };
 
@@ -88,88 +88,103 @@ inline void print_arr(const std::vector<double>& vec) {
 inline std::string Parabolic::explicit_solve(int N, int K) {
     std::vector<double> u_prev(N + 1, 0.0), u_curr(N + 1, 0.0);
 
-    for (int j = 0; j < N; ++j) {
+    for (int j = 0; j <= N; ++j) {
         u_prev[j] = eq_data.psi(j * _h);
-    }
-    for (int j = 0; j < u_prev.size(); ++j) {
         fout << u_prev[j] << ' ';
     }
     fout << '\n';
 
     for (int k = 1; k < K; ++k) {
-        u_curr[0] = eq_data.phi0(k * _tau);  // первый слой
-        if (eq_data.bound_type == First) {   // последний слой
-            u_curr[N] = u_curr[N - 2] + eq_data.phil(k * _tau) * _h;
-        } else if (eq_data.bound_type == Second) {
-            // u_curr[N] = eq_data.phil(k * _tau);
-            u_curr[N] = u_curr[N - 1] + _h * eq_data.phil(k * _tau);
-            ;
-            // u_curr[N] = (4.0 * u_curr[N-1] - u_curr[N-2] + 2.0 * _h * eq_data.phil(k * _tau)) / 3.0;
-        } else if (eq_data.bound_type == Third) {
-            u_curr[N] = (eq_data.phil(k * _tau) + u_curr[N - 2] / _h + 2 * _tau * u_prev[N - 1] / _h) / (1 / _h + 2 * _tau / _h);
-        }
+        double t = k * _tau;
+
+        u_curr[0] = eq_data.phi0(t);
 
         for (int j = 1; j < N; ++j) {
             u_curr[j] = _sigma * u_prev[j + 1] + (1 - 2 * _sigma) * u_prev[j] + _sigma * u_prev[j - 1] +
                         _tau * eq_data.f(j * _h, (k - 1) * _tau);
-            // std::cout << "k = " << k << " j= " << j << "_sigma = " << _sigma << " u_prev[j+1] = " << u_prev[j+1] << " u_prev[j]
-            // = " << u_prev[j] << " u_prev[j - 1] = " << u_prev[j - 1] << " u_curr[j]= " << u_curr[j] << std::endl;
         }
 
-        for (int j = 0; j < u_curr.size(); ++j) {
-            fout << u_curr[j] << ' ';
-            // std::cout << u_curr.size() << std::endl;
+        double phi_l = eq_data.phil(t);
+
+        switch (eq_data.bound_type) {
+            case First:
+                u_curr[N] = u_curr[N - 1] + _h * phi_l;
+                break;
+
+            case Second: {
+                double f_val = eq_data.f(N * _h, (k - 1) * _tau);
+                u_curr[N] = u_prev[N] + _tau * ((2.0 * _a / (_h * _h)) * (u_prev[N - 1] - u_prev[N] + _h * phi_l) + f_val);
+                break;
+            }
+
+            case Third:
+                u_curr[N] = (4.0 * u_curr[N - 1] - u_curr[N - 2] + 2.0 * _h * phi_l) / 3.0;
+                break;
         }
-        fout << '\n';
 
         u_prev = u_curr;
+        for (double val : u_curr) fout << val << ' ';
+        fout << '\n';
     }
-    fout << std::endl;
+
     fout.close();
     return "explicit";
 }
 
 inline std::string Parabolic::implicit_solve(int N, int K) {
-    std::vector<double> a(N + 1, 0), b(N + 1, 0), c(N + 1, 0), d(N + 1, 0);
-    std::vector<double> u_prev(N + 1, 0.0), u_curr(N + 1, 0.0);
+    std::vector<double> a(N + 1), b(N + 1), c(N + 1), d(N + 1);
+    std::vector<double> u_prev(N + 1), u_curr(N + 1);
 
-    for (int i = 1; i < N; ++i) u_prev[i] = eq_data.psi(i * _h);
+    for (int i = 0; i <= N; ++i) u_prev[i] = eq_data.psi(i * _h);
 
     for (int k = 1; k < K; ++k) {
+        double t = k * _tau;
+
+        a[0] = 0;
+        b[0] = 1;
+        c[0] = 0;
+        d[0] = eq_data.phi0(t);
+
         for (int j = 1; j < N; ++j) {
             a[j] = _sigma;
             b[j] = -(1 + 2 * _sigma);
             c[j] = _sigma;
-            d[j] = -u_prev[j] - _tau * eq_data.f(j * _h, k * _tau);
+            d[j] = -u_prev[j] - _tau * eq_data.f(j * _h, t);
         }
 
-        a[0] = 0;
-        b[0] = -(1 + 2 * _sigma);
-        c[0] = _sigma;
-        d[0] = -(u_prev[0] + _sigma * eq_data.phi0(k * _tau)) - _tau * eq_data.f(0, k * _tau);
-        a[N] = _sigma;
-        b[N] = -(1 + _sigma);
-        c[N] = 0;
-        d[N] = -(u_prev[N] + _tau * eq_data.f((N)*_h, k * _tau) + _sigma * _h * eq_data.phil(k * _tau));
+        double phi_l = eq_data.phil(t);
 
-        // a[0] = 0;
-        // b[0] = 1.0;   // просто фиксируем u_0 = phi0
-        // c[0] = 0;
-        // d[0] = eq_data.phi0(k * _tau);
+        switch (eq_data.bound_type) {
+            case First:
+                a[N] = -1.0;
+                b[N] = 1.0;
+                c[N] = 0.0;
+                d[N] = _h * phi_l;
+                break;
 
-        // // Правая граница j=N (Neumann, второй род, 2-й порядок)
-        // a[N] = -1.0;          // коэффициент при u_{N-2}
-        // b[N] = 3.0;           // коэффициент при u_N
-        // c[N] = -4.0;          // коэффициент при u_{N-1}
-        // d[N] = 2.0 * _h * eq_data.phil(k * _tau);
+            case Second:
+                a[N] = 2.0 * _sigma;
+                b[N] = -(1.0 + 2.0 * _sigma);
+                c[N] = 0.0;
+                d[N] = -u_prev[N] - _tau * eq_data.f(N * _h, t) - 2.0 * _sigma * _h * phi_l;
+                break;
+
+            case Third:
+                a[N] = 2.0 * _sigma;
+                b[N] = -(1.0 + 2.0 * _sigma);
+                c[N] = 0.0;
+                d[N] = -u_prev[N] - _tau * eq_data.f(N * _h, t) - 2.0 * _sigma * _h * phi_l;
+
+                break;
+        }
 
         u_curr = tma(a, b, c, d);
-        u_prev = u_curr;
 
         for (int i = 0; i < u_curr.size(); ++i) {
             fout << u_curr[i] << ' ';
         }
         fout << '\n';
+        u_prev = u_curr;
     }
     fout << std::endl;
     fout.close();
@@ -177,16 +192,26 @@ inline std::string Parabolic::implicit_solve(int N, int K) {
 }
 
 inline std::string Parabolic::crank_nicolson_solve(int N, int K) {
-    std::vector<double> a(N + 1, 0), b(N + 1, 0), c(N + 1, 0), d(N + 1, 0);
+    std::vector<double> a(N + 1), b(N + 1), c(N + 1), d(N + 1);
     std::vector<double> u_prev(N + 1, 0.0), u_curr(N + 1, 0.0);
 
-    for (int j = 0; j <= N; ++j) u_prev[j] = eq_data.psi(j * _h);
-
-    for (int j = 0; j <= N; ++j) fout << u_prev[j] << ' ';
+    // Начальное условие
+    for (int j = 0; j <= N; ++j) {
+        u_prev[j] = eq_data.psi(j * _h);
+        fout << u_prev[j] << ' ';
+    }
     fout << '\n';
 
     for (int k = 1; k < K; ++k) {
-        double t_half = (k - 0.5) * _tau;
+        double t = k * _tau;  // Текущее время (k)
+        double t_next = t;    // Время слоя k+1 (в цикле k - это слой, который мы ищем, значит t уже k*tau)
+        double t_prev = (k - 1) * _tau;
+        double t_half = (k - 0.5) * _tau;  // Время для функции источника f
+
+        a[0] = 0;
+        b[0] = 1;
+        c[0] = 0;
+        d[0] = eq_data.phi0(t);
 
         for (int j = 1; j < N; ++j) {
             a[j] = -_sigma / 2.0;
@@ -197,27 +222,36 @@ inline std::string Parabolic::crank_nicolson_solve(int N, int K) {
                    _tau * eq_data.f(j * _h, t_half);
         }
 
-        // a[0] = 0; c[0] = 0; b[0] = 1;
-        // d[0] = eq_data.phi0(k * _tau);
-        a[0] = 0;
-        b[0] = 1.0;
-        c[0] = 0;
-        d[0] = eq_data.phi0(k * _tau);
+        double phi_curr = eq_data.phil(t);       // Поток на слое k
+        double phi_prev = eq_data.phil(t_prev);  // Поток на слое k-1
 
-        // a[N] = 0; c[N] = 0; b[N] = 1;
-        // // d[N] = eq_data.phil(k * _tau);
-        // d[N] = u_curr[N-1] + _h * eq_data.phil(k * _tau);
-        a[N] = -1.0;  // коэффициент при u_{N-2}
-        b[N] = -3.0;  // коэффициент при u_N
-        c[N] = 4.0;   // коэффициент при u_{N-1}
-        d[N] = 2.0 * _h * eq_data.phil(k * _tau);
+        switch (eq_data.bound_type) {
+            case First:  // 1-й порядок: u_N - u_{N-1} = h * phi
+                a[N] = -1.0;
+                b[N] = 1.0;
+                c[N] = 0.0;
+                d[N] = _h * phi_curr;
+                break;
+
+            case Second:
+            case Third:  // Используем Ghost Point для обоих случаев (для сохранения трехдиагональности)
+            {
+                a[N] = -_sigma;
+                b[N] = 1.0 + _sigma;
+                c[N] = 0.0;
+
+                double f_val = eq_data.f(N * _h, t_half);
+
+                d[N] = (1.0 - _sigma) * u_prev[N] + _sigma * u_prev[N - 1] + _sigma * _h * (phi_curr + phi_prev) + _tau * f_val;
+                break;
+            }
+        }
 
         u_curr = tma(a, b, c, d);
+        u_prev = u_curr;
 
         for (int j = 0; j <= N; ++j) fout << u_curr[j] << ' ';
         fout << '\n';
-
-        u_prev = u_curr;
     }
 
     fout << std::endl;
