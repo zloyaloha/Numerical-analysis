@@ -170,11 +170,10 @@ inline std::string Parabolic::implicit_solve(int N, int K) {
                 break;
 
             case Third:
-                a[N] = 2.0 * _sigma;
-                b[N] = -(1.0 + 2.0 * _sigma);
+                a[N] = 1.0 - 2.0 * _sigma;
+                b[N] = 2.0 * _sigma;
                 c[N] = 0.0;
-                d[N] = -u_prev[N] - _tau * eq_data.f(N * _h, t) - 2.0 * _sigma * _h * phi_l;
-
+                d[N] = 2.0 * _sigma * _h * phi_l - d[N - 1];
                 break;
         }
 
@@ -233,18 +232,22 @@ inline std::string Parabolic::crank_nicolson_solve(int N, int K) {
                 d[N] = _h * phi_curr;
                 break;
 
-            case Second:
-            case Third:  // Используем Ghost Point для обоих случаев (для сохранения трехдиагональности)
+            case Second:  // Фиктивный узел
             {
+                double f_val = eq_data.f(N * _h, t_half);
                 a[N] = -_sigma;
                 b[N] = 1.0 + _sigma;
                 c[N] = 0.0;
-
-                double f_val = eq_data.f(N * _h, t_half);
-
-                d[N] = (1.0 - _sigma) * u_prev[N] + _sigma * u_prev[N - 1] + _sigma * _h * (phi_curr + phi_prev) + _tau * f_val;
+                d[N] = (1.0 - _sigma) * u_prev[N] + _sigma * u_prev[N - 1] +
+                       _sigma * _h * (eq_data.phil(t) + eq_data.phil(t_prev)) + _tau * f_val;
                 break;
             }
+            case Third:
+                a[N] = 1.0 - _sigma;
+                b[N] = _sigma;
+                c[N] = 0.0;
+                d[N] = _sigma * _h * (eq_data.phil(t) + eq_data.phil(t_prev)) + d[N - 1];
+                break;
         }
 
         u_curr = tma(a, b, c, d);
